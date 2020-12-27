@@ -4,21 +4,19 @@ This respository holds all the source code for [this YouTube tutorial series](ht
 
 You can find the revision for a specific episode on [this page](https://github.com/davidcallanan/yt-os-series/tags).
 
+Considering supporting this work via [my Patreon page](http://patreon.com/codepulse).
+
 ## Prerequisites
 
- - An text editor such as [VS Code](https://code.visualstudio.com/).
+ - A text editor such as [VS Code](https://code.visualstudio.com/).
  - [Docker](https://www.docker.com/) for creating our build-environment.
  - [Qemu](https://www.qemu.org/) for emulating our operating system.
+   - Remember to add Qemu to the path so that you can access it from your command-line. ([Windows instructions here](https://dev.to/whaleshark271/using-qemu-on-windows-10-home-edition-4062))
 
 ## Setup
 
 Build an image for our build-environment:
  - `docker build buildenv -t myos-buildenv`
-
-## Cleanup
-
-Remove the build-evironment image:
- - `docker rmi myos-buildenv -f`
 
 ## Build
 
@@ -41,7 +39,7 @@ You can emulate your operating system using [Qemu](https://www.qemu.org/): (Don'
 
 Alternatively, you should be able to load the operating system on a USB drive and boot into it when you turn on your computer. (I haven't actually tested this yet.)
 
-## YouTube Channel
+## Cleanup
 
- - YouTube channel: [CodePulse](http://youtube.com/codepulse).
- - Considering supporting this work via [my Patreon page](http://patreon.com/codepulse).
+Remove the build-evironment image:
+ - `docker rmi myos-buildenv -f`
