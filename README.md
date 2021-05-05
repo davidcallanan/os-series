@@ -43,6 +43,11 @@ You can emulate your operating system using [Qemu](https://www.qemu.org/): (Don'
 
 Alternatively, you should be able to load the operating system on a USB drive and boot into it when you turn on your computer. (I haven't actually tested this yet.)
 
+## A few notes for keyboard interaction
+
+Shift and Capslock support is still in development. You can only type one key per second. Sometimes if you do not see the output you must restart the OS. **DO NOT PRESS ' OR " THESE KEYS ARE NOT SUPPORTED BY THE WAY THE CODE IS WRITTEN YOU WILL NEED TO RESTART**
+
+
 ## Cleanup
 
 Remove the build-evironment image:
