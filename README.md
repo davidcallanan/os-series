@@ -21,7 +21,7 @@ Build an image for our build-environment:
 ## Build
 
 Enter build environment:
- - Linux or MacOS: `docker run --rm -it -v "$PWD":/root/env myos-buildenv`
+ - Linux or MacOS: `docker run --rm -it -v "$(pwd)":/root/env myos-buildenv`
  - Windows (CMD): `docker run --rm -it -v "%cd%":/root/env myos-buildenv`
  - Windows (PowerShell): `docker run --rm -it -v "${pwd}:/root/env" myos-buildenv`
  - Please use the linux command if you are using `WSL`, `msys2` or `git bash`
