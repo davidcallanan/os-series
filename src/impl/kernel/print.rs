@@ -44,13 +44,22 @@ pub fn clear() {
 }
 
 pub fn print_line(text: &str) {
-    for char in text.chars() {
-        print_char(char);
+    for character in text.chars() {
+        print_char(character);
     }
+    print_char('\n');
 }
 
 pub fn print_char(character: char) {
     unsafe {
+        if character == '\n' {
+            unsafe {
+                current_row += 1;
+                current_col = 0;
+                return;
+            }
+        }
+
         // https://en.wikipedia.org/wiki/VGA_text_mode
         core::ptr::write_volatile(
             (0xb8000 + (current_col + current_row * 80) * 2) as *mut u16,
