@@ -1,3 +1,15 @@
+JOS - Jakob's OS
+
+Experimental learning activity. Forked on https://github.com/davidcallanan/os-series
+
+Rough list of potential adaptions
+
+- use Rust instead of C (WIP)
+- make running on RISC-V (ESP32-C3?) instead of x86_64
+- Adopt Bazel instead of make
+- write a simple microkernel
+
+
 # Write Your Own 64-bit Operating System Kernel From Scratch
 
 This respository holds all the source code for [this YouTube tutorial series](https://www.youtube.com/playlist?list=PLZQftyCk7_SeZRitx5MjBKzTtvk0pHMtp).

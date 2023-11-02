@@ -1,18 +1,16 @@
-# https://github.com/randomdude/gcc-cross-x86_64-elf/blob/7b47c65f4823fd6080df370ea95b14e5c5b78165/Dockerfile
-
 FROM debian:latest
+
+SHELL ["/bin/bash", "-c"]
+CMD ["/bin/bash"]
 
 ARG BINUTILS_VERSION=2.41
 ARG GCC_VERSION=13.2.0
 
 RUN echo "deb http://security.debian.org/debian-security bullseye-security main contrib non-free" > /etc/apt/sources.list
 
-# Install cross-compiler prerequisites
 RUN set -x \
     && apt-get update \
-    && apt-get install -y wget gcc libgmp3-dev libmpfr-dev libisl-dev \
-    libmpc-dev texinfo bison flex make bzip2 patch \
-    build-essential nasm xorriso grub-pc-bin grub-common
+    && apt-get install -y curl build-essential nasm xorriso grub-pc-bin grub-common make wget gcc libgmp3-dev libmpfr-dev libisl-dev libmpc-dev texinfo bison flex make bzip2 patch
 
 # Pull binutils and gcc source code
 RUN set -x \
@@ -41,7 +39,10 @@ RUN set -x \
     && ./build-binutils.sh ${BINUTILS_VERSION} \
     && ./build-gcc.sh ${GCC_VERSION}
 
-CMD ["/bin/bash"]
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --target x86_64-unknown-none --profile complete -y
+
+RUN source "$HOME/.cargo/env" \
+    rustup target add x86_64-unknown-none
 
 VOLUME /root/env
 WORKDIR /root/env
