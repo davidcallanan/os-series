@@ -1,6 +1,6 @@
 JOS - Jakob's OS
 
-Experimental learning activity. Forked on https://github.com/davidcallanan/os-series
+Experimental learning activity. Forked from https://github.com/davidcallanan/os-series
 
 Rough list of potential adaptions
 
@@ -8,6 +8,13 @@ Rough list of potential adaptions
 - make running on RISC-V (ESP32-C3?) instead of x86_64
 - Adopt Bazel instead of make
 - write a simple microkernel
+
+## Compile and Run
+
+- `docker build buildenv_rust -t jos_buildenv`
+- `docker run --rm -it -v "${pwd}:/root/env" jos_buildenv`
+- `make build-x86_64`
+- (other shell) `qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso`
 
 
 # Write Your Own 64-bit Operating System Kernel From Scratch
