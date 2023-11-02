@@ -1,2 +1,4 @@
 /build/
 /dist/
+Cargo.lock
+/target/

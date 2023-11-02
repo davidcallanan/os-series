@@ -1,0 +1,20 @@
+[package]
+name = "jos"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+[build]
+target = "x86_64-unknown-none"
+
+[[bin]]
+name = "jos"
+path = "src/impl/kernel/*"    
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
