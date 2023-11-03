@@ -26,8 +26,8 @@ fn get_video_byte_string(character: char, foreground: Colors, background: Colors
 }
 
 // TODO handle those module global variables in rusty way
-static mut current_row: u64 = 0;
-static mut current_col: u64 = 0;
+static mut CURRENT_ROW: u64 = 0;
+static mut CURRENT_COL: u64 = 0;
 
 pub fn clear() {
     for column in 0..80 {
@@ -53,23 +53,28 @@ pub fn print_line(text: &str) {
 pub fn print_char(character: char) {
     unsafe {
         if character == '\n' {
-            unsafe {
-                current_row += 1;
-                current_col = 0;
-                return;
-            }
+            CURRENT_ROW += 1;
+            CURRENT_COL = 0;
+            return;
         }
 
         // https://en.wikipedia.org/wiki/VGA_text_mode
         core::ptr::write_volatile(
-            (0xb8000 + (current_col + current_row * 80) * 2) as *mut u16,
+            (0xb8000 + (CURRENT_COL + CURRENT_ROW * 80) * 2) as *mut u16,
             get_video_byte_string(character, Colors::PrintColorBlack, Colors::PrintColorWhite),
         );
 
-        if current_col == 80 {
-            current_col = 0;
-            current_row += 1;
+        if CURRENT_COL == 80 {
+            CURRENT_COL = 0;
+            CURRENT_ROW += 1;
         }
-        current_col += 1;
+        CURRENT_COL += 1;
+    }
+}
+
+pub fn print_integer(number: i64) {
+    if number > 0 {
+        print_integer(number / 10);
+        print_char((number % 10 + 0x30) as u8 as char);
     }
 }
