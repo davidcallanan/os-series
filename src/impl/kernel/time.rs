@@ -1,16 +1,27 @@
 use core::arch::asm;
-use print::{print_integer, print_line};
+use print::{print_char, print_integer};
+
+#[allow(dead_code)]
+#[derive(PartialEq, Clone)]
+enum CmosRegister {
+    Seconds = 0x00,
+    Minutes = 0x02,
+    Hours = 0x04,
+    Weekday = 0x06,
+    DayOfMonth = 0x07,
+    Month = 0x08,
+    Year = 0x09,
+    StatusA = 0x0a,
+    StatusB = 0x0b,
+}
 
 // https://wiki.osdev.org/CMOS#Accessing_CMOS_Registers
-// https://github.com/sphaerophoria/stream-os/blob/master/src/io/io_allocator.rs#L67
-// https://stackoverflow.com/a/64818139
-// outb (0x70, (NMI_disable_bit << 7) | (selected CMOS register number));
-pub fn get_time() {
+fn read_cmos_i16(register: CmosRegister, bcd_enabled: bool) -> i16 {
     unsafe {
         asm!(
             r#"out %al, %dx"#,
             in("dx") 0x70 as i16,
-            in("al") 0x08 as u8,
+            in("al") register.clone() as u8,
             options(att_syntax)
         );
 
@@ -23,8 +34,26 @@ pub fn get_time() {
             options(att_syntax)
         );
 
-        print_line("Time: ");
-        print_integer(ret.into());
-        print_line("seconds");
+        if bcd_enabled && register != CmosRegister::StatusA {
+            return ((ret as i16 & 0xF0) >> 1) + ((ret as i16 & 0xF0) >> 3) + (ret as i16 & 0xf);
+        } else {
+            return ret as i16;
+        }
     }
+}
+
+// https://github.com/sphaerophoria/stream-os/blob/master/src/io/io_allocator.rs#L67
+// https://stackoverflow.com/a/64818139
+pub fn print_time() {
+    let bcd_enabled: bool = read_cmos_i16(CmosRegister::StatusA, false) != 0;
+
+    let hours: i16 = read_cmos_i16(CmosRegister::Hours, bcd_enabled);
+    let minutes: i16 = read_cmos_i16(CmosRegister::Minutes, bcd_enabled);
+    let seconds: i16 = read_cmos_i16(CmosRegister::Seconds, bcd_enabled);
+
+    print_integer(hours.into());
+    print_char(':');
+    print_integer(minutes.into());
+    print_char(':');
+    print_integer(seconds.into());
 }

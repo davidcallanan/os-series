@@ -3,6 +3,7 @@
 
 use core::panic::PanicInfo;
 
+mod logging;
 mod print;
 mod time;
 
@@ -15,9 +16,10 @@ fn panic(_info: &PanicInfo) -> ! {
 #[no_mangle]
 pub extern "C" fn kernel_main() -> ! {
     print::clear();
-    print::print_line("Hello World!");
+    logging::log("successfull boot!");
+    logging::log("Hellö Wörld!");
 
-    print::print_line("Und nu?\n");
+    panic!("this is a terrible mistake!");
 
     print::print_line("Test");
 

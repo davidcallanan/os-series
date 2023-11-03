@@ -1,3 +1,5 @@
+// add better formatting options, see https://os.phil-opp.com/vga-text-mode/#a-println-macro
+
 #[allow(dead_code)]
 #[repr(u8)]
 pub enum Colors {
@@ -43,14 +45,25 @@ pub fn clear() {
     }
 }
 
-pub fn print_line(text: &str) {
+pub fn print(text: &str) {
     for character in text.chars() {
         print_char(character);
     }
+}
+
+pub fn print_line(text: &str) {
+    print(text);
     print_char('\n');
 }
 
-pub fn print_char(character: char) {
+pub fn print_char(character_in: char) {
+    let mut character = character_in;
+
+    match character as u8 {
+        0x20..=0x7e | b'\n' => (),
+        _ => character = 0xfe as char,
+    }
+
     unsafe {
         if character == '\n' {
             CURRENT_ROW += 1;
