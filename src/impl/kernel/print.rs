@@ -91,3 +91,5 @@ pub fn print_integer(number: i64) {
         print_char((number % 10 + 0x30) as u8 as char);
     }
 }
+
+// TODO implement scrolling

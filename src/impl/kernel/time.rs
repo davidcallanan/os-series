@@ -1,5 +1,5 @@
+use crate::print::{print_char, print_integer};
 use core::arch::asm;
-use print::{print_char, print_integer};
 
 #[allow(dead_code)]
 #[derive(PartialEq, Clone)]

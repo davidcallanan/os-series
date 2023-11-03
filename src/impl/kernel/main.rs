@@ -9,7 +9,16 @@ mod time;
 
 /// This function is called on panic.
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    logging::log("Kernel Panic!");
+
+    let msg = match info.payload().downcast_ref::<&'static str>() {
+        Some(s) => *s,
+        None => "No further details",
+    };
+
+    logging::log(msg);
+
     loop {}
 }
 
@@ -20,10 +29,6 @@ pub extern "C" fn kernel_main() -> ! {
     logging::log("Hellö Wörld!");
 
     panic!("this is a terrible mistake!");
-
-    print::print_line("Test");
-
-    time::get_time();
 
     loop {}
 }

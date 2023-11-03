@@ -1,5 +1,5 @@
-use print;
-use time;
+use crate::print;
+use crate::time;
 
 // TODO introduce log levels
 // TODO then also add colors for levels (Error --> red)
