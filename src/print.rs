@@ -31,6 +31,15 @@ fn get_video_byte_string(character: char, foreground: Colors, background: Colors
 static mut CURRENT_ROW: u64 = 0;
 static mut CURRENT_COL: u64 = 0;
 
+pub struct Printer {}
+
+impl core::fmt::Write for Printer {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        crate::print::print_line(s);
+        Ok(())
+    }
+}
+
 pub fn clear() {
     for column in 0..80 {
         for row in 0..25 {
@@ -90,6 +99,17 @@ pub fn print_integer(number: i64) {
         print_integer(number / 10);
         print_char((number % 10 + 0x30) as u8 as char);
     }
+}
+
+#[macro_export]
+macro_rules! print_line {
+    () => {
+        crate::print::print_char('\n');
+    };
+    ($($arg:tt)*) => {{
+        let mut printer = crate::print::Printer {};
+        core::fmt::write(&mut printer, core::format_args!($($arg)*)).unwrap();
+    }};
 }
 
 // TODO implement scrolling

@@ -28,6 +28,8 @@ pub extern "C" fn kernel_main() -> ! {
     logging::log("successfull boot!");
     logging::log("Hellö Wörld!");
 
+    print_line!("Hello World {} {}", 5, "Rosi");
+
     panic!("this is a terrible mistake!");
 
     loop {}
