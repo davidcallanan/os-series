@@ -4,9 +4,6 @@ version = "0.1.0"
 
 [dependencies]
 
-[build]
-target = "x86_64-unknown-none"
-
 [lib]
 name = "jos"
 edition = "2021"
@@ -15,6 +12,7 @@ crate-type = ["staticlib"]
 
 [profile.dev]
 panic = "abort"
+strip = true
 
 [profile.release]
 panic = "abort"
