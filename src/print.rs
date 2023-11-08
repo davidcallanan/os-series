@@ -35,9 +35,21 @@ pub struct Printer {}
 
 impl core::fmt::Write for Printer {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        crate::print::print_line(s);
+        crate::print::print(s);
         Ok(())
     }
+}
+
+#[macro_export]
+macro_rules! print_line {
+    () => {
+        crate::print::print_char('\n');
+    };
+    ($($arg:tt)*) => {{
+        let mut printer = crate::print::Printer {};
+        core::fmt::write(&mut printer, core::format_args!($($arg)*)).unwrap();
+        crate::print::print_char('\n');
+    }};
 }
 
 pub fn clear() {
@@ -51,6 +63,34 @@ pub fn clear() {
                 );
             }
         }
+    }
+}
+
+fn scroll_line() {
+    for column in 0..80 {
+        for row in 0..24 {
+            unsafe {
+                core::ptr::write_volatile(
+                    (0xb8000 + (row * 80 + column) * 2) as *mut u16,
+                    core::ptr::read_volatile((0xb8000 + ((row + 1) * 80 + column) * 2) as *mut u16),
+                );
+            }
+        }
+    }
+
+    // clear bottom line
+    for column in 0..80 {
+        unsafe {
+            core::ptr::write_volatile(
+                (0xb8000 + (24 * 80 + column) * 2) as *mut u16,
+                get_video_byte_string(' ', Colors::PrintColorBlack, Colors::PrintColorWhite),
+            );
+        }
+    }
+
+    unsafe {
+        CURRENT_COL = 0;
+        CURRENT_ROW = 0;
     }
 }
 
@@ -76,6 +116,12 @@ pub fn print_char(character_in: char) {
     unsafe {
         if character == '\n' {
             CURRENT_ROW += 1;
+
+            if CURRENT_ROW > 24 {
+                scroll_line();
+                CURRENT_ROW = 24;
+            }
+
             CURRENT_COL = 0;
             return;
         }
@@ -89,6 +135,11 @@ pub fn print_char(character_in: char) {
         if CURRENT_COL == 80 {
             CURRENT_COL = 0;
             CURRENT_ROW += 1;
+
+            if CURRENT_ROW > 24 {
+                scroll_line();
+                CURRENT_ROW = 24;
+            }
         }
         CURRENT_COL += 1;
     }
@@ -99,17 +150,6 @@ pub fn print_integer(number: i64) {
         print_integer(number / 10);
         print_char((number % 10 + 0x30) as u8 as char);
     }
-}
-
-#[macro_export]
-macro_rules! print_line {
-    () => {
-        crate::print::print_char('\n');
-    };
-    ($($arg:tt)*) => {{
-        let mut printer = crate::print::Printer {};
-        core::fmt::write(&mut printer, core::format_args!($($arg)*)).unwrap();
-    }};
 }
 
 // TODO implement scrolling

@@ -28,7 +28,19 @@ pub extern "C" fn kernel_main() -> ! {
     logging::log("successfull boot!");
     logging::log("Hellö Wörld!");
 
-    print_line!("Hello World {} {}", 5, "Rosi");
+    let mut counter = 0;
+
+    loop {
+        print_line!("Counter {}", counter);
+        logging::log(" ");
+
+        // TODO implement a sleep function
+        for i in 0..10000000 {
+            ()
+        }
+
+        counter += 1;
+    }
 
     panic!("this is a terrible mistake!");
 
