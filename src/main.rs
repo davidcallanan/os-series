@@ -14,7 +14,7 @@ fn panic(info: &PanicInfo) -> ! {
 
     let msg = match info.payload().downcast_ref::<&'static str>() {
         Some(s) => *s,
-        None => "No further details",
+        None => "  No further details",
     };
 
     logging::log(msg);

@@ -2,16 +2,16 @@
 name = "jos"
 version = "0.1.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 
 [build]
 target = "x86_64-unknown-none"
 
-[[bin]]
+[lib]
 name = "jos"
-path = "src/impl/kernel/*"    
+edition = "2021"
+path = "src/main.rs" 
+crate-type = ["staticlib"]
 
 [profile.dev]
 panic = "abort"
