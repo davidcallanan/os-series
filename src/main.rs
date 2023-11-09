@@ -24,9 +24,9 @@ fn panic(info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn kernel_main() -> ! {
-    print::clear();
-    logging::log("successfull boot!");
-    logging::log("Hellö Wörld!");
+    clear_console!();
+    print_line!("successfull boot!");
+    print_line!("Hellö Wörld!");
 
     let mut counter = 0;
 

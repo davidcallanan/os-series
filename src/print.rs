@@ -52,6 +52,13 @@ macro_rules! print_line {
     }};
 }
 
+#[macro_export]
+macro_rules! clear_console {
+    () => {
+        crate::print::clear();
+    };
+}
+
 pub fn clear() {
     for column in 0..80 {
         for row in 0..25 {
