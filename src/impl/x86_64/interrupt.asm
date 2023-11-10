@@ -2,14 +2,6 @@
 ; https://wiki.osdev.org/ISR
 ; https://wiki.osdev.org/Interrupts_Tutorial
 
-global idt_flush
-idt_flush:
-    mov rax, [rsp+4]
-    LIDT [rax]
-	; TODO reactivate
-    ; sti
-    RET
-
 %macro ISR_NOERRCODE 1
     global isr%1
     isr%1:
