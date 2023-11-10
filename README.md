@@ -16,6 +16,8 @@ Rough list of potential adaptions
 - `make build-x86_64`
 - (other shell) `qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso`
 
+https://wiki.osdev.org/QEMU#Useful_QEMU_command-line_options
+
 
 # Write Your Own 64-bit Operating System Kernel From Scratch
 
