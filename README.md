@@ -14,7 +14,7 @@ Rough list of potential adaptions
 - `docker build buildenv_rust -t jos_buildenv`
 - `docker run --rm -it -v "${pwd}:/root/env" jos_buildenv`
 - `make build-x86_64`
-- (other shell) `qemu-system-x86_64 -cdrom dist/x86_64/kernel.iso`
+- (other shell) `qemu-system-x86_64 -s -S -d int -no-reboot -cdrom dist/x86_64/kernel.iso`
 
 https://wiki.osdev.org/QEMU#Useful_QEMU_command-line_options
 

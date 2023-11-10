@@ -12,7 +12,8 @@
             "cwd": "${workspaceRoot}",
             "valuesFormatting": "parseText",
             "target": ":1234",
-            "remote": true
+            "remote": true,
+            "printCalls": true,
         }
     ]
 }
