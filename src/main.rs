@@ -3,6 +3,7 @@
 
 use core::panic::PanicInfo;
 
+mod interrupt;
 mod logging;
 mod print;
 mod time;
@@ -24,6 +25,8 @@ fn panic(info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn kernel_main() -> ! {
+    interrupt::init_idt();
+
     clear_console!();
     print_line!("successfull boot!");
     print_line!("Hellö Wörld!");
@@ -35,14 +38,14 @@ pub extern "C" fn kernel_main() -> ! {
         logging::log(" ");
 
         // TODO implement a sleep function
-        for i in 0..10000000 {
+        for _ in 0..10000000 {
             ()
         }
 
         counter += 1;
     }
 
-    panic!("this is a terrible mistake!");
+    //panic!("this is a terrible mistake!");
 
-    loop {}
+    //loop {}
 }
