@@ -7,7 +7,7 @@ version = "0.1.0"
 [lib]
 name = "jos"
 edition = "2021"
-path = "src/main.rs" 
+path = "src/kernel.rs" 
 crate-type = ["staticlib"]
 
 [profile.dev]
