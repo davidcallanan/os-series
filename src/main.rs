@@ -3,6 +3,7 @@
 
 use core::panic::PanicInfo;
 
+mod gdt;
 mod interrupt;
 mod logging;
 mod print;
@@ -25,6 +26,7 @@ fn panic(info: &PanicInfo) -> ! {
 
 #[no_mangle]
 pub extern "C" fn kernel_main() -> ! {
+    gdt::init_gdt();
     interrupt::init_idt();
 
     clear_console!();
