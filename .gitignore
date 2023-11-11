@@ -2,3 +2,4 @@
 /dist/
 Cargo.lock
 /target/
+.hypothesis/unicode_data/14.0.0/charmap.json.gz
