@@ -1,3 +1,4 @@
+global reloadSegments
 reloadSegments:
    ; Reload CS register:
    PUSH 0x08                 ; Push code segment to stack, 0x08 is a stand-in for your code segment

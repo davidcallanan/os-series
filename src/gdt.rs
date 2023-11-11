@@ -18,15 +18,13 @@ struct GDT {
 
 // https://wiki.osdev.org/GDT_Tutorial#Flat_.2F_Long_Mode_Setup
 static mut GDT_ENTRIES: [[u8; 8]; 5] = [[0; 8], [0; 8], [0; 8], [0; 8], [0; 8]];
-struct GdtPtrStruct {
-    size: usize,
-    offset: *const [u8; 8],
-}
 
-static mut GDT_PTR: GdtPtrStruct = GdtPtrStruct {
-    size: core::mem::size_of::<GDT>() * 5 - 1,
-    offset: unsafe { GDT_ENTRIES.as_ptr() },
-};
+#[repr(C)]
+#[repr(packed(2))]
+struct GdtPtrStruct {
+    size: u16,
+    offset: u64,
+}
 
 pub fn init_gdt() {
     unsafe {
@@ -69,15 +67,25 @@ pub fn init_gdt() {
         ]
     };
     unsafe {
+        let GDT_PTR: GdtPtrStruct = GdtPtrStruct {
+            size: 8 * 8 * 5 - 1,
+            //https://stackoverflow.com/a/64311274
+            // https://github.com/rust-osdev/x86_64/blob/master/src/addr.rs#L100C9-L100C9
+            // Complexity from last link probably not required
+            offset: (((GDT_ENTRIES.as_ptr() as u64) << 16) as i64 >> 16) as u64,
+        };
         asm!("cli");
         asm!(
             "lgdt [{}]", in(reg) &GDT_PTR, options(readonly, nostack, preserves_flags)
         );
-        extern "C" fn reloadSegments() {}
+        extern "C" {
+            fn reloadSegments();
+        }
         reloadSegments();
     }
 }
 
+// https://wiki.osdev.org/GDT_Tutorial#Filling_the_Table
 fn encode_gdt_entry(source: GDT) -> [u8; 8] {
     let mut target: [u8; 8] = [0; 8];
 
