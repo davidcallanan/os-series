@@ -67,7 +67,7 @@ pub fn init_gdt() {
         ]
     };
     unsafe {
-        let GDT_PTR: GdtPtrStruct = GdtPtrStruct {
+        let gdt_ptr: GdtPtrStruct = GdtPtrStruct {
             size: 8 * 8 * 5 - 1,
             //https://stackoverflow.com/a/64311274
             // https://github.com/rust-osdev/x86_64/blob/master/src/addr.rs#L100C9-L100C9
@@ -76,7 +76,7 @@ pub fn init_gdt() {
         };
         asm!("cli");
         asm!(
-            "lgdt [{}]", in(reg) &GDT_PTR, options(readonly, nostack, preserves_flags)
+            "lgdt [{}]", in(reg) &gdt_ptr, options(readonly, nostack, preserves_flags)
         );
         extern "C" {
             fn reloadSegments();
