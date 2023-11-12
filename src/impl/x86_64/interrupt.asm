@@ -25,7 +25,7 @@
         cli
         push LONG 0
         push LONG %2
-        jmp irq_common_stub
+        jmp isr_common_stub
 %endmacro
 
 ISR_NOERRCODE 0
@@ -65,7 +65,7 @@ ISR_NOERRCODE 31
 ISR_NOERRCODE 128
 ISR_NOERRCODE 177
 
-IRQ 0, 32
+IRQ   0,    32
 IRQ   1,    33
 IRQ   2,    34
 IRQ   3,    35
@@ -83,84 +83,84 @@ IRQ  14,    46
 IRQ  15,    47
 
 ; https://www.reddit.com/r/osdev/comments/cp40lb/64bit_isr_handler_breaking_my_stack
+; https://github.com/rust-osdev/x86_64/issues/392#issuecomment-1257883895
 extern isr_handler
 isr_common_stub:
-	push rdx
-	push rcx
-	push rbx
-	push rax
-
-	push rdi
-	push rsi
 	push rbp
-
-	mov rax, cr4
 	push rax
-	mov rax, cr3
-	push rax
-	mov rax, cr2
-	push rax
-	mov rax, cr0
-	push rax
-
+	push rbx
+	push rcx
+	push rdx
+	push rsi
+	push rdi
+	push r8
+	push r9
+	push r10
+	push r11
+	push r12
+	push r13
+	push r14
+	push r15
+	mov rsi, rsp    ; second arg: register list
+	mov rdi, rsp
+	add rdi, 15*8   ; first arg: interrupt frame
 	extern isr_handler
 	call isr_handler
-
-	pop rax ; cr0
-	pop rax ; cr2
-	pop rax ; cr3
-	pop rax ; cr4
-
-	pop rbp
-	pop rsi
+	pop r15
+	pop r14
+	pop r13
+	pop r12 
+	pop r11
+	pop r10
+	pop r9
+	pop r8
 	pop rdi
-
-	pop rax
-	pop rbx
-	pop rcx
+	pop rsi
 	pop rdx
-
-	add rsp, 16
+	pop rcx
+	pop rbx
+	pop rax
+	pop rbp
 	sti
 	iretq
 
-extern irq_handler
-irq_common_stub:
- 	push rdx
-	push rcx
-	push rbx
-	push rax
+; extern irq_handler
+; irq_common_stub:
+;  	push rdx
+; 	push rcx
+; 	push rbx
+; 	push rax
 
-	push rdi
-	push rsi
-	push rbp
+; 	push rdi
+; 	push rsi
+; 	push rbp
 
-	mov rax, cr4
-	push rax
-	mov rax, cr3
-	push rax
-	mov rax, cr2
-	push rax
-	mov rax, cr0
-	push rax
+; 	mov rax, cr4
+; 	push rax
+; 	mov rax, cr3
+; 	push rax
+; 	mov rax, cr2
+; 	push rax
+; 	mov rax, cr0
+; 	push rax
 
-	extern irq_handler
-	call irq_handler
+; 	extern irq_handler
+; 	call irq_handler
 
-	pop rax ; cr0
-	pop rax ; cr2
-	pop rax ; cr3
-	pop rax ; cr4
+; 	pop rax ; cr0
+; 	pop rax ; cr2
+; 	pop rax ; cr3
+; 	pop rax ; cr4
 
-	pop rbp
-	pop rsi
-	pop rdi
+; 	pop rbp
+; 	pop rsi
+; 	pop rdi
 
-	pop rax
-	pop rbx
-	pop rcx
-	pop rdx
+; 	pop rax
+; 	pop rbx
+; 	pop rcx
+; 	pop rdx
 
-	add rsp, 16
-	sti
-	iretq
+; 	add rsp, 16
+; 	sti
+; 	iretq
