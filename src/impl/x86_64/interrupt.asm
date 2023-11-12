@@ -6,6 +6,7 @@
     global isr%1
     isr%1:
         cli
+		
         push LONG 0
         push LONG %1
         jmp isr_common_stub
@@ -15,6 +16,7 @@
     global isr%1
     isr%1:
         cli
+		
         push LONG %1
         jmp isr_common_stub
 %endmacro
@@ -25,7 +27,7 @@
         cli
         push LONG 0
         push LONG %2
-        jmp isr_common_stub
+        jmp irq_common_stub
 %endmacro
 
 ISR_NOERRCODE 0
@@ -86,6 +88,7 @@ IRQ  15,    47
 ; https://github.com/rust-osdev/x86_64/issues/392#issuecomment-1257883895
 extern isr_handler
 isr_common_stub:
+iretq
 	push rbp
 	push rax
 	push rbx
@@ -101,12 +104,12 @@ isr_common_stub:
 	push r13
 	push r14
 	push r15
-	mov rsi, rsp    ; second arg: register list
-	mov rdi, rsp
-	add rdi, 15*8   ; first arg: interrupt frame
+	;mov rsi, rsp    ; second arg: register list
+	;mov rdi, rsp
+	;add rdi, 15*8   ; first arg: interrupt frame
 	extern isr_handler
 	call isr_handler
-	pop r15
+ 	pop r15
 	pop r14
 	pop r13
 	pop r12 
@@ -121,46 +124,46 @@ isr_common_stub:
 	pop rbx
 	pop rax
 	pop rbp
-	sti
+	; sti
 	iretq
 
-; extern irq_handler
-; irq_common_stub:
-;  	push rdx
-; 	push rcx
-; 	push rbx
-; 	push rax
+extern irq_handler
+irq_common_stub:
+ 	push rdx
+	push rcx
+	push rbx
+	push rax
 
-; 	push rdi
-; 	push rsi
-; 	push rbp
+	push rdi
+	push rsi
+	push rbp
 
-; 	mov rax, cr4
-; 	push rax
-; 	mov rax, cr3
-; 	push rax
-; 	mov rax, cr2
-; 	push rax
-; 	mov rax, cr0
-; 	push rax
+	mov rax, cr4
+	push rax
+	mov rax, cr3
+	push rax
+	mov rax, cr2
+	push rax
+	mov rax, cr0
+	push rax
 
-; 	extern irq_handler
-; 	call irq_handler
+	extern irq_handler
+	call irq_handler
 
-; 	pop rax ; cr0
-; 	pop rax ; cr2
-; 	pop rax ; cr3
-; 	pop rax ; cr4
+	pop rax ; cr0
+	pop rax ; cr2
+	pop rax ; cr3
+	pop rax ; cr4
 
-; 	pop rbp
-; 	pop rsi
-; 	pop rdi
+	pop rbp
+	pop rsi
+	pop rdi
 
-; 	pop rax
-; 	pop rbx
-; 	pop rcx
-; 	pop rdx
+	pop rax
+	pop rbx
+	pop rcx
+	pop rdx
 
-; 	add rsp, 16
-; 	sti
-; 	iretq
+	add rsp, 16 ; "pop" the two longs we have pushed originally !?
+	sti
+	iretq

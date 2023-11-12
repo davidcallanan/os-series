@@ -34,24 +34,60 @@ static mut IDT_ENTRIES: [IdtEntryStruct; 256] = [IdtEntryStruct {
 }; 256];
 
 #[repr(C)]
+#[repr(packed(2))]
+#[derive(Debug)]
+// TODO Requires 64 bit types, needs more checking/testing
 pub struct InterruptRegisters {
-    int_no: u8,
+    cr2: u64,
+    ds: u64,
+    rdi: u64,
+    rsi: u64,
+    rbp: u64,
+    rsp: u64,
+    rbx: u64,
+    rdx: u64,
+    rcx: u64,
+    rax: u64,
+    int_no: u64,
+    err_code: u64,
+    rip: u64,
+    csm: u64,
+    eflags: u64,
+    useresp: u64,
+    ss: u64,
+}
+
+//https://github.com/rust-osdev/x86_64/blob/d891bdbbb1fc8e41987309685829e28d1ec305e4/src/structures/idt.rs#L941
+#[repr(C)]
+#[derive(Debug)]
+pub struct StackFrame {
+    pub instruction_pointer: u64,
+    /// The code segment selector, padded with zeros.
+    pub code_segment: u64,
+    /// The flags register before the interrupt handler was invoked.
+    pub cpu_flags: u64,
+    /// The stack pointer at the time of the interrupt.
+    pub stack_pointer: u64,
+    /// The stack segment descriptor at the time of the interrupt (often zero in 64-bit mode).
+    pub stack_segment: u64,
 }
 
 #[no_mangle]
-pub extern "C" fn isr_handler(/*regs: InterruptRegisters*/) {
+pub extern "C" fn isr_handler(/*regs: InterruptRegisters, stackframe: StackFrame*/) {
     //if regs.int_no < 32 {
     //println!(exception_messages[regs->int_no]);
     //println!("\n");
     //panic!("Exception! System Halted");
     logging::log("ISR");
+    //print_line!("{:x?}", regs);
+    //print_line!("{:x?}", stackframe);
 
     //out_port_b(0x20, 0x20);
     //}
 }
 
 #[no_mangle]
-pub extern "C" fn irq_handler(/*regs: InterruptRegisters*/) {
+pub extern "C" fn irq_handler(/*regs: InterruptRegisters, stackframe: StackFrame*/) {
     /*
     void (*handler)(struct InterruptRegisters *regs);
 
@@ -67,6 +103,8 @@ pub extern "C" fn irq_handler(/*regs: InterruptRegisters*/) {
     */
 
     logging::log("IRQ");
+    //print_line!("{:x?}", regs);
+    //print_line!("{:x?}", stackframe);
     out_port_b(0x20, 0x20);
 }
 
@@ -126,6 +164,11 @@ pub fn init_idt() {
 
     out_port_b(0x21, 0x0);
     out_port_b(0xA1, 0x0);
+
+    // Only keystrokes
+    //https://wiki.osdev.org/I_Can%27t_Get_Interrupts_Working#IRQ_problems
+    //out_port_b(0x21, 0xfd);
+    //out_port_b(0xa1, 0xff);
 
     // Generated with http://www.mynikko.com/tools/tool_incrementstr.html
     extern "C" {
@@ -479,7 +522,7 @@ pub fn init_idt() {
     set_idt_gate(177, addr_isr177, 0x08, 0x8E);
 
     unsafe {
-        let IDT_PTR: IdtPtrStruct = IdtPtrStruct {
+        let idt_ptr: IdtPtrStruct = IdtPtrStruct {
             limit: 128 * 256 - 1, //(core::mem::size_of::<IdtEntryStruct>() * 256 - 1) as u16,
             //https://stackoverflow.com/a/64311274
             // https://github.com/rust-osdev/x86_64/blob/master/src/addr.rs#L100C9-L100C9
@@ -489,7 +532,7 @@ pub fn init_idt() {
         asm!(
             "lidt [{}]
             sti",
-            in(reg) &IDT_PTR, options(readonly, nostack, preserves_flags)
+            in(reg) &idt_ptr, options(readonly, nostack, preserves_flags)
         );
     }
 }
