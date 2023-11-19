@@ -1,7 +1,7 @@
 // https://github.com/scprogramming/Jazz2.0/blob/main/src/interrupts/idt.c
 // https://wiki.osdev.org/Interrupts_Tutorial
 
-use crate::logging;
+use crate::println;
 use core::arch::asm;
 
 #[repr(C, packed(2))]
@@ -73,39 +73,23 @@ pub struct StackFrame {
 }
 
 #[no_mangle]
-pub extern "C" fn isr_handler(/*regs: InterruptRegisters, stackframe: StackFrame*/) {
-    //if regs.int_no < 32 {
-    //println!(exception_messages[regs->int_no]);
-    //println!("\n");
-    //panic!("Exception! System Halted");
-    logging::log("ISR");
-    //print_line!("{:x?}", regs);
-    //print_line!("{:x?}", stackframe);
-
-    //out_port_b(0x20, 0x20);
-    //}
+pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
+    if int_no < 32 {
+        println!("ISR {:x?} error_code {:x?}", int_no, error_code);
+    } else {
+        println!("ISR {:x?}", int_no);
+    }
+    out_port_b(0x20, 0x20);
 }
 
 #[no_mangle]
-pub extern "C" fn irq_handler(/*regs: InterruptRegisters, stackframe: StackFrame*/) {
-    /*
-    void (*handler)(struct InterruptRegisters *regs);
-
-    handler = irq_routines[regs->int_no - 32];
-
-    if (handler){
-        handler(regs);
-    }
-
-    if (regs->int_no >= 40){
+pub extern "C" fn irq_handler(_: u64, int_no: u64) {
+    if int_no >= 40 {
         out_port_b(0xA0, 0x20);
     }
-    */
-
-    logging::log("IRQ");
-    //print_line!("{:x?}", regs);
-    //print_line!("{:x?}", stackframe);
     out_port_b(0x20, 0x20);
+
+    println!("IRQ {:x?}", int_no);
 }
 
 fn out_port_b(port: u16, value: u8) {

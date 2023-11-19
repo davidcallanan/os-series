@@ -1,7 +1,7 @@
 #![no_std] // don't link the Rust standard library
 #![no_main] // disable all Rust-level entry points
 
-use core::panic::PanicInfo;
+use core::{arch::asm, panic::PanicInfo};
 
 mod gdt;
 mod interrupt;
@@ -30,13 +30,18 @@ pub extern "C" fn kernel_main() -> ! {
     interrupt::init_idt();
 
     clear_console!();
-    print_line!("successfull boot!");
-    print_line!("Hellö Wörld!");
+    println!("successfull boot!");
+    println!("Hellö Wörld!");
 
     let mut counter = 0;
 
+    // Trigger exception
+    unsafe {
+        asm!("int3", options(nomem, nostack));
+    }
+
     loop {
-        print_line!("Counter {}", counter);
+        println!("Counter {}", counter);
         logging::log(" ");
 
         // TODO implement a sleep function

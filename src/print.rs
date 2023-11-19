@@ -41,7 +41,7 @@ impl core::fmt::Write for Printer {
 }
 
 #[macro_export]
-macro_rules! print_line {
+macro_rules! println {
     () => {
         crate::print::print_char('\n');
     };
@@ -158,5 +158,3 @@ pub fn print_integer(number: i64) {
         print_char((number % 10 + 0x30) as u8 as char);
     }
 }
-
-// TODO implement scrolling
