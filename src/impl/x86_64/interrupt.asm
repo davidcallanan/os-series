@@ -2,6 +2,9 @@
 ; https://wiki.osdev.org/ISR
 ; https://wiki.osdev.org/Interrupts_Tutorial
 
+extern isr_handler
+extern irq_handler
+
 %macro ISR_NOERRCODE 1
     global isr%1
     isr%1:
@@ -47,11 +50,11 @@ ISR_ERRCODE 14
 
 ISR_NOERRCODE 15
 ISR_NOERRCODE 16
-ISR_NOERRCODE 17
+ISR_ERRCODE 17
 ISR_NOERRCODE 18
 ISR_NOERRCODE 19
 ISR_NOERRCODE 20
-ISR_NOERRCODE 21
+ISR_ERRCODE 21
 ISR_NOERRCODE 22
 ISR_NOERRCODE 23
 ISR_NOERRCODE 24
@@ -59,8 +62,8 @@ ISR_NOERRCODE 25
 ISR_NOERRCODE 26
 ISR_NOERRCODE 27
 ISR_NOERRCODE 28
-ISR_NOERRCODE 29
-ISR_NOERRCODE 30
+ISR_ERRCODE 29
+ISR_ERRCODE 30
 ISR_NOERRCODE 31
 ISR_NOERRCODE 128
 ISR_NOERRCODE 177
@@ -84,85 +87,27 @@ IRQ  15,    47
 
 ; https://www.reddit.com/r/osdev/comments/cp40lb/64bit_isr_handler_breaking_my_stack
 ; https://github.com/rust-osdev/x86_64/issues/392#issuecomment-1257883895
-extern isr_handler
+
 isr_common_stub:
-	; push rbp
-	; push rax
-	; push rbx
-	; push rcx
-	; push rdx
-	; push rsi
-	; push rdi
-	; push r8
-	; push r9
-	; push r10
-	; push r11
-	; push r12
-	; push r13
-	; push r14
-	; push r15
-	;mov rsi, rsp    ; second arg: register list
-	;mov rdi, rsp
-	;add rdi, 15*8   ; first arg: interrupt frame
-	extern isr_handler
+	; https://aaronbloomfield.github.io/pdr/book/x86-64bit-ccc-chapter.pdf
+	push rdi ; save previous value to stack as we are gonna using it to pass arguments to isr_handler
+	push rsi
+
+	mov rdi, [rsp+2*8]	; put the the error number into rsi (1nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
+	mov rsi, [rsp+1*8]	; put the the isr number into rdi (2nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
+
 	call isr_handler
- 	; pop r15
-	; pop r14
-	; pop r13
-	; pop r12 
-	; pop r11
-	; pop r10
-	; pop r9
-	; pop r8
-	; pop rdi
-	; pop rsi
-	; pop rdx
-	; pop rcx
-	; pop rbx
-	; pop rax
-	; pop rbp
-	; sti
-	add rsp, 16
+
+	pop rsi
+	pop rdi
+
+	add rsp, 16 ; "pop" the two longs we have pushed originally
 	sti
 	iretq
 
-extern irq_handler
 irq_common_stub:
- 	; push rdx
-	; push rcx
-	; push rbx
-	; push rax
-
-	; push rdi
-	; push rsi
-	; push rbp
-
-	; mov rax, cr4
-	; push rax
-	; mov rax, cr3
-	; push rax
-	; mov rax, cr2
-	; push rax
-	; mov rax, cr0
-	; push rax
-
-	extern irq_handler
 	call irq_handler
 
-	; pop rax ; cr0
-	; pop rax ; cr2
-	; pop rax ; cr3
-	; pop rax ; cr4
-
-	; pop rbp
-	; pop rsi
-	; pop rdi
-
-	; pop rax
-	; pop rbx
-	; pop rcx
-	; pop rdx
-
-	add rsp, 16 ; "pop" the two longs we have pushed originally !?
+	add rsp, 16 ; "pop" the two longs we have pushed originally
 	sti
 	iretq
