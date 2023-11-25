@@ -76,6 +76,7 @@ pub struct StackFrame {
 pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
     if int_no < 32 {
         println!("ISR {:x?} error_code {:x?}", int_no, error_code);
+        println!("{}", CPU_EXCEPTIONS[int_no as usize]);
     } else {
         println!("ISR {:x?}", int_no);
     }
@@ -521,9 +522,7 @@ pub fn init_idt() {
     }
 }
 
-/*
-
-unsigned char* exception_messages[] = {
+static CPU_EXCEPTIONS: [&str; 32] = [
     "Division By Zero",
     "Debug",
     "Non Maskable Interrupt",
@@ -555,22 +554,5 @@ unsigned char* exception_messages[] = {
     "Reserved",
     "Reserved",
     "Reserved",
-    "Reserved"
-};
-
-
-
-void *irq_routines[16] = {
-    0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0
-};
-
-void irq_install_handler (int irq, void (*handler)(struct InterruptRegisters *r)){
-    irq_routines[irq] = handler;
-}
-
-void irq_uninstall_handler(int irq){
-    irq_routines[irq] = 0;
-}
-
-*/
+    "Reserved",
+];

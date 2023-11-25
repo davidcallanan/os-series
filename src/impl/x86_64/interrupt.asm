@@ -90,7 +90,8 @@ IRQ  15,    47
 
 isr_common_stub:
 	; https://aaronbloomfield.github.io/pdr/book/x86-64bit-ccc-chapter.pdf
-	push rdi ; save previous value to stack as we are gonna using it to pass arguments to isr_handler
+    ; https://www.ired.team/miscellaneous-reversing-forensics/windows-kernel-internals/linux-x64-calling-convention-stack-frame 
+    push rdi ; save previous value to stack as we are gonna using it to pass arguments to isr_handler
 	push rsi
 
 	mov rdi, [rsp+3*8]	; put the the error number into rsi (1nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
