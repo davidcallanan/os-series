@@ -93,8 +93,8 @@ isr_common_stub:
 	push rdi ; save previous value to stack as we are gonna using it to pass arguments to isr_handler
 	push rsi
 
-	mov rdi, [rsp+2*8]	; put the the error number into rsi (1nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
-	mov rsi, [rsp+1*8]	; put the the isr number into rdi (2nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
+	mov rdi, [rsp+3*8]	; put the the error number into rsi (1nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
+	mov rsi, [rsp+2*8]	; put the the isr number into rdi (2nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
 
 	call isr_handler
 
