@@ -57,40 +57,36 @@ pub struct InterruptRegisters {
     ss: u64,
 }
 
-//https://github.com/rust-osdev/x86_64/blob/d891bdbbb1fc8e41987309685829e28d1ec305e4/src/structures/idt.rs#L941
-#[repr(C)]
-#[derive(Debug)]
-pub struct StackFrame {
-    pub instruction_pointer: u64,
-    /// The code segment selector, padded with zeros.
-    pub code_segment: u64,
-    /// The flags register before the interrupt handler was invoked.
-    pub cpu_flags: u64,
-    /// The stack pointer at the time of the interrupt.
-    pub stack_pointer: u64,
-    /// The stack segment descriptor at the time of the interrupt (often zero in 64-bit mode).
-    pub stack_segment: u64,
-}
-
 #[no_mangle]
 pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
     if int_no < 32 {
-        println!("ISR {:x?} error_code {:x?}", int_no, error_code);
+        println!("ISR {} error_code {:x?}", int_no, error_code);
         println!("{}", CPU_EXCEPTIONS[int_no as usize]);
     } else {
-        println!("ISR {:x?}", int_no);
+        println!("ISR {}", int_no);
     }
     out_port_b(0x20, 0x20);
 }
 
 #[no_mangle]
-pub extern "C" fn irq_handler(_: u64, int_no: u64) {
+pub extern "C" fn irq_handler(int_no: u64) {
     if int_no >= 40 {
         out_port_b(0xA0, 0x20);
     }
     out_port_b(0x20, 0x20);
 
-    println!("IRQ {:x?}", int_no);
+    // Keypress
+    if int_no - 32 == 1 {
+        let mut key: i8;
+
+        unsafe {
+            asm!("in al, dx", out("al") key, in("rdx") 0x60, options(nomem, nostack, preserves_flags));
+        }
+
+        println!("Key pressed {}", key as u8);
+    }
+
+    println!("IRQ {:x?}", int_no - 32);
 }
 
 fn out_port_b(port: u16, value: u8) {
@@ -132,6 +128,7 @@ macro_rules! setIdtGate {
 */
 
 pub fn init_idt() {
+    // https://www.eeeguide.com/8259-programmable-interrupt-controller/
     //0x20 commands and 0x21 data
     //0xA0 commands and 0xA1 data
 
@@ -149,6 +146,11 @@ pub fn init_idt() {
 
     out_port_b(0x21, 0x0);
     out_port_b(0xA1, 0x0);
+
+    // Set PIC mask to only let kayboard irqs through
+    // https://wiki.osdev.org/I_Can%27t_Get_Interrupts_Working#IRQ_problems
+    out_port_b(0x21, 0xfd);
+    out_port_b(0xA1, 0xff);
 
     // Only keystrokes
     //https://wiki.osdev.org/I_Can%27t_Get_Interrupts_Working#IRQ_problems

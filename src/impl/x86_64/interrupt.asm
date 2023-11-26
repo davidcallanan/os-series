@@ -107,7 +107,12 @@ isr_common_stub:
 	iretq
 
 irq_common_stub:
+    push rdi
+	mov rdi, [rsp+8]
+
 	call irq_handler
+
+    pop rdi
 
 	add rsp, 16 ; "pop" the two longs we have pushed originally
 	sti
