@@ -5,6 +5,7 @@ use core::{arch::asm, panic::PanicInfo};
 
 mod gdt;
 mod interrupt;
+mod keyboard;
 mod logging;
 mod print;
 mod time;
@@ -14,12 +15,7 @@ mod time;
 fn panic(info: &PanicInfo) -> ! {
     logging::log("Kernel Panic!");
 
-    let msg = match info.payload().downcast_ref::<&'static str>() {
-        Some(s) => *s,
-        None => "  No further details",
-    };
-
-    logging::log(msg);
+    println!("{}", info);
 
     loop {}
 }

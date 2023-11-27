@@ -1,6 +1,8 @@
 // https://github.com/scprogramming/Jazz2.0/blob/main/src/interrupts/idt.c
 // https://wiki.osdev.org/Interrupts_Tutorial
 
+use crate::keyboard;
+use crate::print;
 use crate::println;
 use core::arch::asm;
 
@@ -70,23 +72,24 @@ pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
 
 #[no_mangle]
 pub extern "C" fn irq_handler(int_no: u64) {
-    if int_no >= 40 {
-        out_port_b(0xA0, 0x20);
-    }
-    out_port_b(0x20, 0x20);
-
     // Keypress
     if int_no - 32 == 1 {
         let mut key: i8;
 
         unsafe {
-            asm!("in al, dx", out("al") key, in("rdx") 0x60, options(nomem, nostack, preserves_flags));
+            asm!("in al, dx", out("al") key, in("rdx") 0x60);
         }
 
-        println!("Key pressed {}", key as u8);
+        print!("{}", keyboard::get_key_for_scancode(key as u8));
     }
 
-    println!("IRQ {:x?}", int_no - 32);
+    if int_no >= 40 {
+        out_port_b(0xA0, 0x20);
+    }
+    out_port_b(0x20, 0x20);
+
+    // TODO print as debug log level
+    //println!("IRQ {:x?}", int_no - 32);
 }
 
 fn out_port_b(port: u16, value: u8) {
@@ -129,6 +132,7 @@ macro_rules! setIdtGate {
 
 pub fn init_idt() {
     // https://www.eeeguide.com/8259-programmable-interrupt-controller/
+    // https://stackoverflow.com/a/283033
     //0x20 commands and 0x21 data
     //0xA0 commands and 0xA1 data
 

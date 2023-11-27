@@ -53,6 +53,15 @@ macro_rules! println {
 }
 
 #[macro_export]
+macro_rules! print {
+    () => {};
+    ($($arg:tt)*) => {{
+        let mut printer = crate::print::Printer {};
+        core::fmt::write(&mut printer, core::format_args!($($arg)*)).unwrap();
+    }};
+}
+
+#[macro_export]
 macro_rules! clear_console {
     () => {
         crate::print::clear();
