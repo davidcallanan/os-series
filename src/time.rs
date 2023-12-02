@@ -1,4 +1,4 @@
-use crate::print::{print_char, print_integer};
+use crate::print::{print_char, print_char_at_pos, print_integer, print_integer_at_pos};
 use core::arch::asm;
 
 #[allow(dead_code)]
@@ -56,4 +56,18 @@ pub fn print_time() {
     print_integer(minutes.into());
     print_char(':');
     print_integer(seconds.into());
+}
+
+pub fn update_clock() {
+    let bcd_enabled: bool = read_cmos_i16(CmosRegister::StatusA, false) != 0;
+
+    let hours: i16 = read_cmos_i16(CmosRegister::Hours, bcd_enabled);
+    let minutes: i16 = read_cmos_i16(CmosRegister::Minutes, bcd_enabled);
+    let seconds: i16 = read_cmos_i16(CmosRegister::Seconds, bcd_enabled);
+
+    print_integer_at_pos(hours.into(), 0, 70);
+    print_char_at_pos(':', 0, 72);
+    print_integer_at_pos(minutes.into(), 0, 73);
+    print_char_at_pos(':', 0, 75);
+    print_integer_at_pos(seconds.into(), 0, 76);
 }

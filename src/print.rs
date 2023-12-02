@@ -121,6 +121,30 @@ pub fn print_line(text: &str) {
     print_char('\n');
 }
 
+pub fn print_text_at_pos(text: &str, row: u64, column: u64) {
+    let mut i = 0;
+    for character in text.chars() {
+        print_char_at_pos(character, row, column + i);
+        i += 1;
+    }
+}
+
+pub fn print_char_at_pos(character_in: char, row: u64, column: u64) {
+    // TODO remove the unsafe
+    unsafe {
+        let old_row = CURRENT_ROW;
+        let old_column = CURRENT_COL;
+
+        CURRENT_ROW = row;
+        CURRENT_COL = column;
+
+        print_char(character_in);
+
+        CURRENT_COL = old_column;
+        CURRENT_ROW = old_row;
+    }
+}
+
 pub fn print_char(character_in: char) {
     let mut character = character_in;
 
@@ -162,8 +186,28 @@ pub fn print_char(character_in: char) {
 }
 
 pub fn print_integer(number: i64) {
-    if number > 0 {
+    if number > 10 {
         print_integer(number / 10);
+    }
+    print_char((number % 10 + 0x30) as u8 as char);
+}
+
+pub fn print_integer_at_pos(number: i64, row: u64, column: u64) {
+    // TODO remove the unsafe
+    unsafe {
+        let old_row = CURRENT_ROW;
+        let old_column = CURRENT_COL;
+
+        CURRENT_ROW = row;
+        CURRENT_COL = column;
+
+        if number > 10 {
+            print_integer_at_pos(number / 10, row, column);
+            CURRENT_COL = column + 1;
+        }
         print_char((number % 10 + 0x30) as u8 as char);
+
+        CURRENT_COL = old_column;
+        CURRENT_ROW = old_row;
     }
 }

@@ -4,6 +4,7 @@
 use crate::keyboard;
 use crate::print;
 use crate::println;
+use crate::time;
 use core::arch::asm;
 
 #[repr(C, packed(2))]
@@ -72,6 +73,11 @@ pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
 
 #[no_mangle]
 pub extern "C" fn irq_handler(int_no: u64) {
+    // Clock
+    if int_no - 32 == 0 {
+        time::update_clock();
+    }
+
     // Keypress
     if int_no - 32 == 1 {
         let mut key: i8;
@@ -153,8 +159,8 @@ pub fn init_idt() {
 
     // Set PIC mask to only let kayboard irqs through
     // https://wiki.osdev.org/I_Can%27t_Get_Interrupts_Working#IRQ_problems
-    out_port_b(0x21, 0xfd);
-    out_port_b(0xA1, 0xff);
+    //out_port_b(0x21, 0xfd);
+    //out_port_b(0xA1, 0xff);
 
     // Only keystrokes
     //https://wiki.osdev.org/I_Can%27t_Get_Interrupts_Working#IRQ_problems

@@ -29,26 +29,12 @@ pub extern "C" fn kernel_main() -> ! {
     println!("successfull boot!");
     println!("Hellö Wörld!");
 
-    let mut counter = 0;
-
     // Trigger exception
     unsafe {
         asm!("int3", options(nomem, nostack));
     }
 
-    loop {
-        println!("Counter {}", counter);
-        logging::log(" ");
-
-        // TODO implement a sleep function
-        for _ in 0..10000000 {
-            ()
-        }
-
-        counter += 1;
-    }
-
     //panic!("this is a terrible mistake!");
 
-    //loop {}
+    loop {}
 }
