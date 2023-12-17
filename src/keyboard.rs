@@ -1,4 +1,5 @@
 // http://kbdlayout.info/KBDGR/scancodes+names
+// http://kbdlayout.info/KBDGR/virtualkeys
 static SCANCODES: [char; 69] = [
     0xfe as char,
     0xfe as char,
@@ -28,7 +29,7 @@ static SCANCODES: [char; 69] = [
     'p',
     0xfe as char,
     0xfe as char,
-    0xfe as char,
+    '\n', //VK_RETURN -> map to ascii line feed
     0xfe as char,
     'a',
     's',
@@ -57,7 +58,7 @@ static SCANCODES: [char; 69] = [
     0xfe as char,
     0xfe as char,
     0xfe as char,
-    0xfe as char,
+    ' ', //VK_SPACE -> map to whitespace
     0xfe as char,
     0xfe as char,
     0xfe as char,
@@ -72,9 +73,8 @@ static SCANCODES: [char; 69] = [
 ];
 
 pub fn get_key_for_scancode(scancode: u8) -> char {
-    if scancode < 69 {
-        SCANCODES[scancode as usize]
-    } else {
-        0xfe as char
+    match scancode as u8 {
+        0..=68 => SCANCODES[scancode as usize],
+        _ => 0xfe as char,
     }
 }

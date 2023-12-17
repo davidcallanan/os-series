@@ -62,31 +62,33 @@ pub struct InterruptRegisters {
 
 #[no_mangle]
 pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
-    if int_no < 32 {
-        println!("ISR {} error_code {:x?}", int_no, error_code);
-        println!("{}", CPU_EXCEPTIONS[int_no as usize]);
-    } else {
-        println!("ISR {}", int_no);
-    }
+    match int_no as u64 {
+        0..=31 => {
+            println!("ISR {} error_code {:x?}", int_no, error_code);
+            println!("{}", CPU_EXCEPTIONS[int_no as usize]);
+        }
+        _ => println!("ISR {}", int_no),
+    };
+
     out_port_b(0x20, 0x20);
 }
 
 #[no_mangle]
 pub extern "C" fn irq_handler(int_no: u64) {
-    // Clock
-    if int_no - 32 == 0 {
-        time::update_clock();
-    }
+    match (int_no - 32) as u64 {
+        // Clock
+        0 => time::update_clock(),
+        // Keyboard action
+        1 => {
+            let mut key: i8;
 
-    // Keypress
-    if int_no - 32 == 1 {
-        let mut key: i8;
+            unsafe {
+                asm!("in al, dx", out("al") key, in("rdx") 0x60);
+            }
 
-        unsafe {
-            asm!("in al, dx", out("al") key, in("rdx") 0x60);
+            print!("{}", keyboard::get_key_for_scancode(key as u8));
         }
-
-        print!("{}", keyboard::get_key_for_scancode(key as u8));
+        _ => {}
     }
 
     if int_no >= 40 {
