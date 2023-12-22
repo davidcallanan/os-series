@@ -4,10 +4,10 @@ Experimental learning activity. Forked from https://github.com/davidcallanan/os-
 
 Rough list of potential adaptions
 
-- use Rust instead of C (WIP)
+- ✅ use Rust instead of C
+- write a simple microkernel able to run processes which can communicate via an IPC (WIP)
 - make running on RISC-V (ESP32-C3?) instead of x86_64
 - Adopt Bazel instead of make
-- write a simple microkernel
 
 ## Compile and Run
 
