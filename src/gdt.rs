@@ -24,27 +24,27 @@ static mut GDT_ENTRIES: [[u8; 8]; 7] = [[0; 8], [0; 8], [0; 8], [0; 8], [0; 8], 
 #[repr(C)]
 #[repr(packed(2))]
 #[derive(Clone, Copy)]
-struct Tss {
-    reserved1: u32,
-    rsp0: u64,
-    rsp1: u64,
-    rsp2: u64,
-    reserved2: u64,
-    ist1: u64,
-    ist2: u64,
-    ist3: u64,
-    ist4: u64,
-    ist5: u64,
-    ist6: u64,
-    ist7: u64,
-    reserved3: u64,
-    reserved4: u16,
-    iopb: u16,
+pub struct Tss {
+    pub reserved1: u32,
+    pub rsp0: u64,
+    pub rsp1: u64,
+    pub rsp2: u64,
+    pub reserved2: u64,
+    pub ist1: u64,
+    pub ist2: u64,
+    pub ist3: u64,
+    pub ist4: u64,
+    pub ist5: u64,
+    pub ist6: u64,
+    pub ist7: u64,
+    pub reserved3: u64,
+    pub reserved4: u16,
+    pub iopb: u16,
 }
 
 pub static mut TSS_ENTRY: Tss = Tss {
     reserved1: 0x0,
-    rsp0: 0x14cf80, // TODO replace with derived value, dont use static
+    rsp0: 0x0,
     rsp1: 0x0,
     rsp2: 0x0,
     reserved2: 0x0,

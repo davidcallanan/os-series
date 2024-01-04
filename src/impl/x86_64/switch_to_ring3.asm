@@ -8,6 +8,7 @@
 
 global jump_usermode
 extern userland
+extern TSS_ENTRY
 jump_usermode:
 	; enable system call extensions that enable sysret and syscall
 	mov rcx, 0xc0000080
@@ -30,7 +31,7 @@ jump_usermode:
 	mov rax, syscall_handler
 	mov rdx, 0x0
 	wrmsr
- 
+
 	mov ecx, userland ; to be loaded into RIP
 	mov r11, 0x202 ; to be loaded into EFLAGS
 

@@ -7,8 +7,8 @@ pub fn switch_to_userland() {
     }
 
     unsafe {
-        // TODO set dynamically before switching to userspace
-        TSS_ENTRY.rsp0 = 0x14cf68;
+        asm!("mov {}, rsp", out(reg) TSS_ENTRY.rsp0 );
+
         jump_usermode();
     }
 }
@@ -16,22 +16,22 @@ pub fn switch_to_userland() {
 #[no_mangle]
 // Inside here the CPL register should be 3 (CPL=3) --> we are in user land / ring 3
 pub extern "C" fn userland() {
-    // System call
-    // TODO Renable
-    // TODO wrap nicely ("glibc"?)
-    /*unsafe {
-        asm!(
+    loop {
+        // System call
+        // TODO Renable
+        // TODO wrap nicely ("glibc"?)
+        unsafe {
+            asm!(
+                "
+                push r11
+                push rcx
+                syscall
+                pop rcx
+                pop r11
             "
-            push r11
-            push rcx
-            syscall
-            pop rcx
-            pop r11
-        "
-        );
-    }*/
-
-    loop {}
+            );
+        }
+    }
 }
 
 #[no_mangle]
