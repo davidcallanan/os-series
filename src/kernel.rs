@@ -8,7 +8,9 @@ mod interrupt;
 mod keyboard;
 mod logging;
 mod print;
+mod syscall;
 mod time;
+mod userland;
 
 /// This function is called on panic.
 #[panic_handler]
@@ -33,6 +35,8 @@ pub extern "C" fn kernel_main() -> ! {
     unsafe {
         asm!("int3", options(nomem, nostack));
     }
+
+    userland::switch_to_userland();
 
     //panic!("this is a terrible mistake!");
 

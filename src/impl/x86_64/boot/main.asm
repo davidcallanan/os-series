@@ -62,11 +62,13 @@ check_long_mode:
 
 setup_page_tables:
 	mov eax, page_table_l3
-	or eax, 0b11 ; present, writable
+	; TODO disable user access generally?
+	or eax, 0b111 ; present, writable, access from user
 	mov [page_table_l4], eax
 	
 	mov eax, page_table_l2
-	or eax, 0b11 ; present, writable
+	; TODO disable user access generally?
+	or eax, 0b111 ; present, writable, access from user
 	mov [page_table_l3], eax
 
 	mov ecx, 0 ; counter
@@ -74,7 +76,8 @@ setup_page_tables:
 
 	mov eax, 0x200000 ; 2MiB
 	mul ecx
-	or eax, 0b10000011 ; present, writable, huge page
+	; TODO disable user access generally?
+	or eax, 0b10000111 ; present, writable, huge page, access from user
 	mov [page_table_l2 + ecx * 8], eax
 
 	inc ecx ; increment counter

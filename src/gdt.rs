@@ -1,5 +1,6 @@
 use crate::logging;
 use core::arch::asm;
+use core::mem;
 
 // https://wiki.osdev.org/GDT_Tutorial
 // https://en.wikipedia.org/wiki/Global_Descriptor_Table#GDT_in_64-bit
@@ -17,7 +18,47 @@ struct GDT {
 }
 
 // https://wiki.osdev.org/GDT_Tutorial#Flat_.2F_Long_Mode_Setup
-static mut GDT_ENTRIES: [[u8; 8]; 5] = [[0; 8], [0; 8], [0; 8], [0; 8], [0; 8]];
+static mut GDT_ENTRIES: [[u8; 8]; 7] = [[0; 8], [0; 8], [0; 8], [0; 8], [0; 8], [0; 8], [0; 8]];
+
+// https://wiki.osdev.org/TSS#Long_Mode
+#[repr(C)]
+#[repr(packed(2))]
+#[derive(Clone, Copy)]
+struct Tss {
+    reserved1: u32,
+    rsp0: u64,
+    rsp1: u64,
+    rsp2: u64,
+    reserved2: u64,
+    ist1: u64,
+    ist2: u64,
+    ist3: u64,
+    ist4: u64,
+    ist5: u64,
+    ist6: u64,
+    ist7: u64,
+    reserved3: u64,
+    reserved4: u16,
+    iopb: u16,
+}
+
+pub static mut TSS_ENTRY: Tss = Tss {
+    reserved1: 0x0,
+    rsp0: 0x14cf80, // TODO replace with derived value, dont use static
+    rsp1: 0x0,
+    rsp2: 0x0,
+    reserved2: 0x0,
+    ist1: 0x0,
+    ist2: 0x0,
+    ist3: 0x0,
+    ist4: 0x0,
+    ist5: 0x0,
+    ist6: 0x0,
+    ist7: 0x0,
+    reserved3: 0x0,
+    reserved4: 0x0,
+    iopb: 0x0,
+};
 
 #[repr(C)]
 #[repr(packed(2))]
@@ -50,13 +91,6 @@ pub fn init_gdt() {
                 access_byte: 0x92,
                 flags: 0xc,
             }),
-            //  User Mode Code Segment
-            encode_gdt_entry(GDT {
-                base: 0x0,
-                limit: 0xfffff,
-                access_byte: 0xfa,
-                flags: 0xa,
-            }),
             //  User Mode Data Segment
             encode_gdt_entry(GDT {
                 base: 0x0,
@@ -64,11 +98,32 @@ pub fn init_gdt() {
                 access_byte: 0xf2,
                 flags: 0xc,
             }),
+            //  User Mode Code Segment
+            encode_gdt_entry(GDT {
+                base: 0x0,
+                limit: 0xfffff,
+                access_byte: 0xfa,
+                flags: 0xa,
+            }),
+            //  Task State Segment
+            encode_gdt_entry(GDT {
+                base: &TSS_ENTRY as *const _ as u32,
+                limit: &TSS_ENTRY as *const _ as u32 + mem::size_of::<Tss>() as u32 - 1,
+                access_byte: 0x89,
+                flags: 0xc,
+            }),
+            //  Task State Segment, 2nd empty part
+            encode_gdt_entry(GDT {
+                base: 0x0,
+                limit: 0x0,
+                access_byte: 0x0,
+                flags: 0x0,
+            }),
         ]
     };
     unsafe {
         let gdt_ptr: GdtPtrStruct = GdtPtrStruct {
-            size: 8 * 8 * 5 - 1,
+            size: (mem::size_of::<GDT>() * GDT_ENTRIES.len() - 1) as u16,
             //https://stackoverflow.com/a/64311274
             // https://github.com/rust-osdev/x86_64/blob/master/src/addr.rs#L100C9-L100C9
             // Complexity from last link probably not required
@@ -82,6 +137,12 @@ pub fn init_gdt() {
             fn reloadSegments();
         }
         reloadSegments();
+        // Load tss segment selector into task register
+        // sixth 8-byte selector, symbolically OR-ed with 0 to set the RPL (requested privilege level).
+        asm!(
+            "mov ax, (5 * 8) | 0
+            ltr ax"
+        );
     }
 }
 
