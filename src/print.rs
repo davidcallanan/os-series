@@ -85,6 +85,10 @@ pub fn clear() {
 fn scroll_line() {
     for column in 0..80 {
         for row in 0..24 {
+            // Exception for clock
+            if row == 0 && column >= 70 {
+                continue;
+            }
             unsafe {
                 core::ptr::write_volatile(
                     (0xb8000 + (row * 80 + column) * 2) as *mut u16,

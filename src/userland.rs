@@ -1,4 +1,5 @@
 use crate::gdt::TSS_ENTRY;
+use crate::println;
 use core::arch::asm;
 
 pub fn switch_to_userland() {
@@ -17,25 +18,7 @@ pub fn switch_to_userland() {
 // Inside here the CPL register should be 3 (CPL=3) --> we are in user land / ring 3
 pub extern "C" fn userland() {
     loop {
-        // System call
-        // TODO Renable
-        // TODO wrap nicely ("glibc"?)
-        unsafe {
-            asm!(
-                "
-                push r11
-                push rcx
-                syscall
-                pop rcx
-                pop r11
-            "
-            );
-        }
+        //libc::printf();
+        println!("Hellö Wörld!");
     }
-}
-
-#[no_mangle]
-// Inside here the CPL register should be 3 (CPL=3) --> we are in user land / ring 3
-pub extern "C" fn userland_loop() {
-    loop {}
 }

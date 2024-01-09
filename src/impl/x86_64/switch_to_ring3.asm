@@ -2,10 +2,6 @@
 ; https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/24593.pdf p. 174
 ; https://wiki.osdev.org/SYSENTER
 
-; note: this code is for 64-bit long mode only.
-;       it is unknown if it works in protected mode.
-;       using intel assembly style
-
 global jump_usermode
 extern userland
 extern TSS_ENTRY
@@ -35,18 +31,25 @@ jump_usermode:
 	mov ecx, userland ; to be loaded into RIP
 	mov r11, 0x202 ; to be loaded into EFLAGS
 
+	; TODO Dont hard code, test only
+	; set stack pointer to something a bit down the current stack so later it cant easily interfere when jumping between kernel and user space
+	mov rsp, 0x1a0000
+
 	o64 sysret ;use "o64 sysret" if you assemble with NASM
 
 extern system_call
 extern userland_loop
 syscall_handler:
     swapgs
+	
+	push rcx ; syscall has set ecx to the rip of the userland process
+	push r11 ; syscall has set r11 to the rflags
 
     call system_call
 
-    swapgs
-    sti
+	pop r11
+	pop rcx 
 
-	mov ecx, userland_loop ; to be loaded into RIP
-	mov r11, 0x202 ; to be loaded into EFLAGS
+    swapgs
+
 	o64 sysret

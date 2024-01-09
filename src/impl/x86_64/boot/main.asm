@@ -125,8 +125,9 @@ page_table_l3:
 	resb 4096
 page_table_l2:
 	resb 4096
+; TODO Why is stack in bss? Does this make sense? Also Stack is pretty small
 stack_bottom:
-	resb 4096 * 4
+	resb 4096 * 100
 stack_top:
 
 section .rodata
