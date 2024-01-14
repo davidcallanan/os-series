@@ -2,8 +2,8 @@
 // https://wiki.osdev.org/Interrupts_Tutorial
 
 use crate::keyboard;
-use crate::print;
-use crate::println;
+use crate::kprint;
+use crate::kprintln;
 use crate::time;
 use core::arch::asm;
 
@@ -64,10 +64,10 @@ pub struct InterruptRegisters {
 pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
     match int_no as u64 {
         0..=31 => {
-            println!("ISR {} error_code {:x?}", int_no, error_code);
-            println!("{}", CPU_EXCEPTIONS[int_no as usize]);
+            kprintln!("ISR {} error_code {:x?}", int_no, error_code);
+            kprintln!("{}", CPU_EXCEPTIONS[int_no as usize]);
         }
-        _ => println!("ISR {}", int_no),
+        _ => kprintln!("ISR {}", int_no),
     };
 
     out_port_b(0x20, 0x20);
@@ -86,7 +86,7 @@ pub extern "C" fn irq_handler(int_no: u64) {
                 asm!("in al, dx", out("al") key, in("rdx") 0x60);
             }
 
-            print!("{}", keyboard::get_key_for_scancode(key as u8));
+            kprint!("{}", keyboard::get_key_for_scancode(key as u8));
         }
         _ => {}
     }
@@ -96,8 +96,8 @@ pub extern "C" fn irq_handler(int_no: u64) {
     }
     out_port_b(0x20, 0x20);
 
-    // TODO print as debug log level
-    //println!("IRQ {:x?}", int_no - 32);
+    // TODO kprint as debug log level
+    //kprintln!("IRQ {:x?}", int_no - 32);
 }
 
 fn out_port_b(port: u16, value: u8) {

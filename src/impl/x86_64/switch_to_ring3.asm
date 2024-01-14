@@ -44,12 +44,22 @@ syscall_handler:
 	
 	push rcx ; syscall has set ecx to the rip of the userland process
 	push r11 ; syscall has set r11 to the rflags
+	push rsp
 
     call system_call
 
+	pop rsp
 	pop r11
 	pop rcx 
 
     swapgs
 
 	o64 sysret
+
+global trigger_syscall
+trigger_syscall:
+	push r11
+	push rcx
+	syscall
+	pop rcx
+	pop r11

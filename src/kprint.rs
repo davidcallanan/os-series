@@ -1,24 +1,24 @@
-// add better formatting options, see https://os.phil-opp.com/vga-text-mode/#a-println-macro
+// add better formatting options, see https://os.phil-opp.com/vga-text-mode/#a-kprintln-macro
 
 #[allow(dead_code)]
 #[repr(u8)]
 pub enum Colors {
-    PrintColorBlack = 0,
-    PrintColorBlue = 1,
-    PrintColorGreen = 2,
-    PrintColorCyan = 3,
-    PrintColorRed = 4,
-    PrintColorMagenta = 5,
-    PrintColorBrown = 6,
-    PrintColorLightGray = 7,
-    PrintColorDarkGray = 8,
-    PrintColorLightBlue = 9,
-    PrintColorLightGreen = 10,
-    PrintColorLightCyan = 11,
-    PrintColorLightRed = 12,
-    PrintColorPink = 13,
-    PrintColorYellow = 14,
-    PrintColorWhite = 15,
+    KPrintColorBlack = 0,
+    KPrintColorBlue = 1,
+    KPrintColorGreen = 2,
+    KPrintColorCyan = 3,
+    KPrintColorRed = 4,
+    KPrintColorMagenta = 5,
+    KPrintColorBrown = 6,
+    KPrintColorLightGray = 7,
+    KPrintColorDarkGray = 8,
+    KPrintColorLightBlue = 9,
+    KPrintColorLightGreen = 10,
+    KPrintColorLightCyan = 11,
+    KPrintColorLightRed = 12,
+    KPrintColorPink = 13,
+    KPrintColorYellow = 14,
+    KPrintColorWhite = 15,
 }
 
 fn get_video_byte_string(character: char, foreground: Colors, background: Colors) -> u16 {
@@ -31,40 +31,40 @@ fn get_video_byte_string(character: char, foreground: Colors, background: Colors
 static mut CURRENT_ROW: u64 = 0;
 static mut CURRENT_COL: u64 = 0;
 
-pub struct Printer {}
+pub struct KPrinter {}
 
-impl core::fmt::Write for Printer {
+impl core::fmt::Write for KPrinter {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        crate::print::print(s);
+        crate::kprint::kprint(s);
         Ok(())
     }
 }
 
 #[macro_export]
-macro_rules! println {
+macro_rules! kprintln {
     () => {
-        crate::print::print_char('\n');
+        crate::kprint::kprint_char('\n');
     };
     ($($arg:tt)*) => {{
-        let mut printer = crate::print::Printer {};
-        core::fmt::write(&mut printer, core::format_args!($($arg)*)).unwrap();
-        crate::print::print_char('\n');
+        let mut kprinter = crate::kprint::KPrinter {};
+        core::fmt::write(&mut kprinter, core::format_args!($($arg)*)).unwrap();
+        crate::kprint::kprint_char('\n');
     }};
 }
 
 #[macro_export]
-macro_rules! print {
+macro_rules! kprint {
     () => {};
     ($($arg:tt)*) => {{
-        let mut printer = crate::print::Printer {};
-        core::fmt::write(&mut printer, core::format_args!($($arg)*)).unwrap();
+        let mut kprinter = crate::kprint::KPrinter {};
+        core::fmt::write(&mut kprinter, core::format_args!($($arg)*)).unwrap();
     }};
 }
 
 #[macro_export]
 macro_rules! clear_console {
     () => {
-        crate::print::clear();
+        crate::kprint::clear();
     };
 }
 
@@ -75,7 +75,7 @@ pub fn clear() {
                 // https://en.wikipedia.org/wiki/VGA_text_mode
                 core::ptr::write_volatile(
                     (0xb8000 + (row * 80 + column) * 2) as *mut u16,
-                    get_video_byte_string(' ', Colors::PrintColorBlack, Colors::PrintColorWhite),
+                    get_video_byte_string(' ', Colors::KPrintColorBlack, Colors::KPrintColorWhite),
                 );
             }
         }
@@ -103,7 +103,7 @@ fn scroll_line() {
         unsafe {
             core::ptr::write_volatile(
                 (0xb8000 + (24 * 80 + column) * 2) as *mut u16,
-                get_video_byte_string(' ', Colors::PrintColorBlack, Colors::PrintColorWhite),
+                get_video_byte_string(' ', Colors::KPrintColorBlack, Colors::KPrintColorWhite),
             );
         }
     }
@@ -114,26 +114,26 @@ fn scroll_line() {
     }
 }
 
-pub fn print(text: &str) {
+pub fn kprint(text: &str) {
     for character in text.chars() {
-        print_char(character);
+        kprint_char(character);
     }
 }
 
-pub fn print_line(text: &str) {
-    print(text);
-    print_char('\n');
+pub fn kprint_line(text: &str) {
+    kprint(text);
+    kprint_char('\n');
 }
 
-pub fn print_text_at_pos(text: &str, row: u64, column: u64) {
+pub fn _kprint_text_at_pos(text: &str, row: u64, column: u64) {
     let mut i = 0;
     for character in text.chars() {
-        print_char_at_pos(character, row, column + i);
+        kprint_char_at_pos(character, row, column + i);
         i += 1;
     }
 }
 
-pub fn print_char_at_pos(character_in: char, row: u64, column: u64) {
+pub fn kprint_char_at_pos(character_in: char, row: u64, column: u64) {
     // TODO remove the unsafe
     unsafe {
         let old_row = CURRENT_ROW;
@@ -142,14 +142,14 @@ pub fn print_char_at_pos(character_in: char, row: u64, column: u64) {
         CURRENT_ROW = row;
         CURRENT_COL = column;
 
-        print_char(character_in);
+        kprint_char(character_in);
 
         CURRENT_COL = old_column;
         CURRENT_ROW = old_row;
     }
 }
 
-pub fn print_char(character_in: char) {
+pub fn kprint_char(character_in: char) {
     let mut character = character_in;
 
     match character as u8 {
@@ -173,7 +173,11 @@ pub fn print_char(character_in: char) {
         // https://en.wikipedia.org/wiki/VGA_text_mode
         core::ptr::write_volatile(
             (0xb8000 + (CURRENT_COL + CURRENT_ROW * 80) * 2) as *mut u16,
-            get_video_byte_string(character, Colors::PrintColorBlack, Colors::PrintColorWhite),
+            get_video_byte_string(
+                character,
+                Colors::KPrintColorBlack,
+                Colors::KPrintColorWhite,
+            ),
         );
 
         if CURRENT_COL == 80 {
@@ -189,14 +193,14 @@ pub fn print_char(character_in: char) {
     }
 }
 
-pub fn print_integer(number: i64) {
+pub fn kprint_integer(number: i64) {
     if number > 10 {
-        print_integer(number / 10);
+        kprint_integer(number / 10);
     }
-    print_char((number % 10 + 0x30) as u8 as char);
+    kprint_char((number % 10 + 0x30) as u8 as char);
 }
 
-pub fn print_integer_at_pos(number: i64, row: u64, column: u64) {
+pub fn kprint_integer_at_pos(number: i64, row: u64, column: u64) {
     // TODO remove the unsafe
     unsafe {
         let old_row = CURRENT_ROW;
@@ -206,10 +210,10 @@ pub fn print_integer_at_pos(number: i64, row: u64, column: u64) {
         CURRENT_COL = column;
 
         if number > 10 {
-            print_integer_at_pos(number / 10, row, column);
+            kprint_integer_at_pos(number / 10, row, column);
             CURRENT_COL = column + 1;
         }
-        print_char((number % 10 + 0x30) as u8 as char);
+        kprint_char((number % 10 + 0x30) as u8 as char);
 
         CURRENT_COL = old_column;
         CURRENT_ROW = old_row;
