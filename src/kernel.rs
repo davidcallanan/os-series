@@ -6,8 +6,9 @@ use core::{arch::asm, panic::PanicInfo};
 mod gdt;
 mod interrupt;
 mod keyboard;
+mod kprint;
+mod libc;
 mod logging;
-mod print;
 mod syscall;
 mod time;
 mod userland;
@@ -17,7 +18,7 @@ mod userland;
 fn panic(info: &PanicInfo) -> ! {
     logging::log("Kernel Panic!");
 
-    println!("{}", info);
+    kprintln!("{}", info);
 
     loop {}
 }
@@ -28,8 +29,8 @@ pub extern "C" fn kernel_main() -> ! {
     interrupt::init_idt();
 
     clear_console!();
-    println!("successfull boot!");
-    println!("Hellö Wörld!");
+    kprintln!("successfull boot!");
+    kprintln!("Hellö Wörld!");
 
     // Trigger exception
     unsafe {
