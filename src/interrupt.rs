@@ -95,9 +95,6 @@ pub extern "C" fn irq_handler(int_no: u64) {
         out_port_b(0xA0, 0x20);
     }
     out_port_b(0x20, 0x20);
-
-    // TODO kprint as debug log level
-    //kprintln!("IRQ {:x?}", int_no - 32);
 }
 
 fn out_port_b(port: u16, value: u8) {

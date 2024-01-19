@@ -15,7 +15,7 @@ pub fn write(filedescriptor: i64, payload: &[u8]) {
             mov r8, {2:r}
             mov rdx, {3:r}
 
-            jmp trigger_syscall
+            call trigger_syscall
 
             pop rdx
             pop r8

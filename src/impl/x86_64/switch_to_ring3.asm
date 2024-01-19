@@ -2,6 +2,8 @@
 ; https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/24593.pdf p. 174
 ; https://wiki.osdev.org/SYSENTER
 
+%include "src/impl/x86_64/macros.mac"
+
 global jump_usermode
 extern userland
 extern TSS_ENTRY
@@ -46,7 +48,11 @@ syscall_handler:
 	push r11 ; syscall has set r11 to the rflags
 	push rsp
 
+	push_all_registers
+
     call system_call
+
+	pop_all_registers
 
 	pop rsp
 	pop r11
@@ -60,6 +66,14 @@ global trigger_syscall
 trigger_syscall:
 	push r11
 	push rcx
+
+	push_all_registers
+
 	syscall
+
+	pop_all_registers
+
 	pop rcx
 	pop r11
+
+	ret
