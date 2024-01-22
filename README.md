@@ -16,6 +16,8 @@ Rough list of potential adaptions
 - `make build-x86_64`
 - (other shell) `qemu-system-x86_64 -s -S -d int -no-reboot -cdrom dist/x86_64/kernel.iso`
 
+Get Qemu from here: https://qemu.weilnetz.de/ ?
+
 https://wiki.osdev.org/QEMU#Useful_QEMU_command-line_options
 
 

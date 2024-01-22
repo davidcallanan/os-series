@@ -33,9 +33,10 @@ jump_usermode:
 	mov ecx, userland ; to be loaded into RIP
 	mov r11, 0x202 ; to be loaded into EFLAGS
 
-	; TODO Dont hard code, test only
-	; set stack pointer to something a bit down the current stack so later it cant easily interfere when jumping between kernel and user space
-	mov rsp, 0x1a0000
+	mov cr3, rdi
+	
+	; TODO Setting the stack pointer for userland process to max value (rsi is passed from rust code)
+	mov rsp, rsi
 
 	o64 sysret ;use "o64 sysret" if you assemble with NASM
 

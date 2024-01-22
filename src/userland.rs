@@ -1,16 +1,33 @@
 use crate::gdt::TSS_ENTRY;
 use crate::printf;
+use crate::process::Process;
 use core::arch::asm;
 
-pub fn switch_to_userland() {
-    extern "C" {
-        fn jump_usermode();
+pub struct Userland {
+    process: Process,
+}
+
+impl Userland {
+    pub fn new() -> Self {
+        Self {
+            process: Process::new(),
+        }
     }
 
-    unsafe {
-        asm!("mov {}, rsp", out(reg) TSS_ENTRY.rsp0 );
+    pub fn switch_to_userland(self) {
+        extern "C" {
+            fn jump_usermode(process_base_address: u64, stack_top_address: u64);
+        }
 
-        jump_usermode();
+        unsafe {
+            asm!("mov {}, rsp", out(reg) TSS_ENTRY.rsp0);
+
+            let process_base_address = self.process.getC3PageMapL4BaseAddress();
+
+            let stack_top_address = self.process.getStackTopAddress();
+
+            jump_usermode(process_base_address, stack_top_address);
+        }
     }
 }
 

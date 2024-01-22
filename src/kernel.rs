@@ -9,6 +9,7 @@ mod keyboard;
 mod kprint;
 mod libc;
 mod logging;
+mod process;
 mod syscall;
 mod time;
 mod userland;
@@ -37,7 +38,9 @@ pub extern "C" fn kernel_main() -> ! {
         asm!("int3", options(nomem, nostack));
     }
 
-    userland::switch_to_userland();
+    let userland: userland::Userland = userland::Userland::new();
+
+    userland.switch_to_userland();
 
     //panic!("this is a terrible mistake!");
 
