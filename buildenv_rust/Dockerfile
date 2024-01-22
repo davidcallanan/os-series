@@ -36,8 +36,8 @@ COPY files/gcc/config.gcc.patch /usr/local/src/gcc-${GCC_VERSION}/gcc/
 # Build and install binutils and the cross-compiler
 RUN set -x \
     && cd /usr/local/src \
-    && ./build-binutils.sh ${BINUTILS_VERSION} \
-    && ./build-gcc.sh ${GCC_VERSION}
+    && sh ./build-binutils.sh ${BINUTILS_VERSION} \
+    && sh ./build-gcc.sh ${GCC_VERSION}
 
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --target x86_64-unknown-none --profile complete -y
 
