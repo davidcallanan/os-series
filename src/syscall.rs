@@ -1,3 +1,4 @@
+use crate::process::CURRENT_PROCESS;
 use crate::{kprintln, logging::log};
 use core::arch::asm;
 
@@ -15,9 +16,20 @@ pub extern "C" fn system_call() {
 
     match syscall_nr {
         1 => syscall_write(),
+        2 => syscall_getpid(),
         _ => {
             kprintln!("System Call triggered");
         }
+    }
+}
+
+fn syscall_getpid() {
+    unsafe {
+        asm!("
+            mov rax, {:r}
+        ",
+            in(reg) CURRENT_PROCESS,
+        );
     }
 }
 

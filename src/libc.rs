@@ -1,6 +1,27 @@
 use core::arch::asm;
 
-//ssize_t write(int fd, const void buf[.count], size_t count);
+//pid_t getppid(void);
+pub fn getpid() -> u64 {
+    let mut pid = core::u64::MAX;
+    unsafe {
+        asm!("
+            push rax
+
+            mov rax, {0:r}
+
+            call trigger_syscall
+
+            mov {1:r}, rax
+
+            pop rax
+        ",
+            in(reg) 2,
+            out(reg) pid
+        );
+    }
+
+    pid
+}
 
 pub fn write(filedescriptor: i64, payload: &[u8]) {
     unsafe {
