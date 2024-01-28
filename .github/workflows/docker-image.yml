@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: CI
 
 on:
   push:
@@ -13,6 +13,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build buildenv_rust -t jos_buildenv:$(date +%s)
+    - name: Build and push docker
+      uses: docker/build-push-action@v5
+      with:
+        context: buildenv_rust
+        push: true
+        tags: "jos/buildenv:latest"
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
