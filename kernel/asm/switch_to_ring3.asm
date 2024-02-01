@@ -2,10 +2,10 @@
 ; https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/24593.pdf p. 174
 ; https://wiki.osdev.org/SYSENTER
 
-%include "src/impl/x86_64/macros.mac"
+%include "kernel/asm/macros.mac"
 
 global jump_usermode
-extern userland
+extern main
 extern TSS_ENTRY
 jump_usermode:
 	; enable system call extensions that enable sysret and syscall
@@ -30,7 +30,7 @@ jump_usermode:
 	mov rdx, 0x0
 	wrmsr
 
-	mov ecx, userland ; to be loaded into RIP
+	mov ecx, main ; to be loaded into RIP
 	mov r11, 0x202 ; to be loaded into EFLAGS
 
 	mov cr3, rdi

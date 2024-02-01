@@ -5,7 +5,7 @@
 extern isr_handler
 extern irq_handler
 
-%include "src/impl/x86_64/macros.mac"
+%include "kernel/asm/macros.mac"
 
 %macro ISR_NOERRCODE 1
     global isr%1

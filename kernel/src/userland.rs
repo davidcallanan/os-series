@@ -1,6 +1,4 @@
 use crate::gdt::TSS_ENTRY;
-use crate::libc::getpid;
-use crate::printf;
 use crate::process::{Process, CURRENT_PROCESS};
 use core::arch::asm;
 
@@ -31,13 +29,5 @@ impl Userland {
 
             jump_usermode(process_base_address, stack_top_address);
         }
-    }
-}
-
-#[no_mangle]
-// Inside here the CPL register should be 3 (CPL=3) --> we are in user land / ring 3
-pub extern "C" fn userland() {
-    loop {
-        printf!("Hellö Wörld! I am process {}", getpid());
     }
 }

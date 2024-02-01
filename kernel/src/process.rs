@@ -1,4 +1,3 @@
-use crate::kprint;
 use core::arch::asm;
 
 pub static mut CURRENT_PROCESS: u64 = core::u64::MAX;

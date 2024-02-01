@@ -1,14 +1,5 @@
-[package]
-name = "jos"
-version = "0.1.0"
-
-[dependencies]
-
-[lib]
-name = "jos"
-edition = "2021"
-path = "src/kernel.rs" 
-crate-type = ["staticlib"]
+[workspace]
+members = ["kernel", "userland"]
 
 [profile.dev]
 panic = "abort"

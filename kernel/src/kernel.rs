@@ -7,7 +7,6 @@ mod gdt;
 mod interrupt;
 mod keyboard;
 mod kprint;
-mod libc;
 mod logging;
 mod process;
 mod syscall;
