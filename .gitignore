@@ -4,3 +4,5 @@ Cargo.lock
 /target/
 .hypothesis/unicode_data/14.0.0/charmap.json.gz
 /ghidra/
+targets/x86_64/iso/boot/kernel.bin
+ldlog.txt

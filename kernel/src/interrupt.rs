@@ -542,7 +542,7 @@ static CPU_EXCEPTIONS: [&str; 32] = [
     "No Coprocessor",
     "Double fault",
     "Coprocessor Segment Overrun",
-    "Bad TSS",
+    "Invalid TSS",
     "Segment not present",
     "Stack fault",
     "General protection fault",

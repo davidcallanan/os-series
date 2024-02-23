@@ -74,7 +74,7 @@ pub fn clear() {
             unsafe {
                 // https://en.wikipedia.org/wiki/VGA_text_mode
                 core::ptr::write_volatile(
-                    (0xb8000 + (row * 80 + column) * 2) as *mut u16,
+                    (0xffff80003fc00000 + 0xb8000 + (row * 80 + column) * 2 as u64) as *mut u16,
                     get_video_byte_string(' ', Colors::KPrintColorBlack, Colors::KPrintColorWhite),
                 );
             }
@@ -91,8 +91,10 @@ fn scroll_line() {
             }
             unsafe {
                 core::ptr::write_volatile(
-                    (0xb8000 + (row * 80 + column) * 2) as *mut u16,
-                    core::ptr::read_volatile((0xb8000 + ((row + 1) * 80 + column) * 2) as *mut u16),
+                    (0xffff80003fc00000 + 0xb8000 + (row * 80 + column) * 2 as u64) as *mut u16,
+                    core::ptr::read_volatile(
+                        (0xffff80003fc00000 + 0xb8000 + ((row + 1) * 80 + column) * 2) as *mut u16,
+                    ),
                 );
             }
         }
@@ -102,7 +104,7 @@ fn scroll_line() {
     for column in 0..80 {
         unsafe {
             core::ptr::write_volatile(
-                (0xb8000 + (24 * 80 + column) * 2) as *mut u16,
+                (0xffff80003fc00000 + 0xb8000 + (24 * 80 + column) * 2 as u64) as *mut u16,
                 get_video_byte_string(' ', Colors::KPrintColorBlack, Colors::KPrintColorWhite),
             );
         }
@@ -172,7 +174,7 @@ pub fn kprint_char(character_in: char) {
 
         // https://en.wikipedia.org/wiki/VGA_text_mode
         core::ptr::write_volatile(
-            (0xb8000 + (CURRENT_COL + CURRENT_ROW * 80) * 2) as *mut u16,
+            (0xffff80003fc00000 + 0xb8000 + (CURRENT_COL + CURRENT_ROW * 80) * 2) as *mut u16,
             get_video_byte_string(
                 character,
                 Colors::KPrintColorBlack,

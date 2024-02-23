@@ -2,6 +2,9 @@
 ; https://wiki.osdev.org/ISR
 ; https://wiki.osdev.org/Interrupts_Tutorial
 
+section .text
+bits 64
+
 extern isr_handler
 extern irq_handler
 
@@ -95,12 +98,16 @@ isr_common_stub:
     ; https://www.ired.team/miscellaneous-reversing-forensics/windows-kernel-internals/linux-x64-calling-convention-stack-frame 
     push rdi ; save previous value to stack as we are gonna using it to pass arguments to isr_handler
 	push rsi
+    push rax
+    ; Attention! --> when you push more registers here, you have to update the following stack references
 
-	mov rdi, [rsp+3*8]	; put the the error number into rsi (1nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
-	mov rsi, [rsp+2*8]	; put the the isr number into rdi (2nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
+	mov rdi, [rsp+4*8]	; put the the error number into rsi (1nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
+	mov rsi, [rsp+3*8]	; put the the isr number into rdi (2nd argument for isr_handler); it has been previously pushed onto the stack (see macros above)
 
-	call isr_handler
+    mov rax, QWORD isr_handler
+	call rax
 
+    pop rax
 	pop rsi
 	pop rdi
 
@@ -110,11 +117,12 @@ isr_common_stub:
 
 irq_common_stub:
     push rdi
+
 	mov rdi, [rsp+8]
 
     push_all_registers
-
-	call irq_handler
+    mov rax, QWORD irq_handler
+	call rax
 
     pop_all_registers
 

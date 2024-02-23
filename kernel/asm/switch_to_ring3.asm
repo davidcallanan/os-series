@@ -2,6 +2,9 @@
 ; https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/24593.pdf p. 174
 ; https://wiki.osdev.org/SYSENTER
 
+section .text
+bits 64
+
 %include "kernel/asm/macros.mac"
 
 global jump_usermode
@@ -24,15 +27,16 @@ jump_usermode:
 	;			...__0000000000001000 ; SYSCALL_CS = value and SYSCALL_SS = value + 8
 	wrmsr
 
-	; define a handler for syscalls and write it to lstar register
+	; define a handler for syscalls and write it to lstar register; attention: wrmsr writes edx:eax and not rax!
 	mov rcx, 0xc0000082
-	mov rax, syscall_handler
-	mov rdx, 0x0
+	mov rax, QWORD syscall_handler
+	mov edx, 0xffff8000
 	wrmsr
 
-	mov ecx, main ; to be loaded into RIP
+	mov rcx, QWORD main ; to be loaded into RIP
 	mov r11, 0x202 ; to be loaded into EFLAGS
 
+	; Attention: CR3 consumes physical addresses!
 	mov cr3, rdi
 	
 	; TODO Setting the stack pointer for userland process to max value (rsi is passed from rust code)
@@ -51,7 +55,8 @@ syscall_handler:
 
 	push_all_registers
 
-    call system_call
+	mov rax, QWORD system_call
+	call rax
 
 	pop_all_registers
 

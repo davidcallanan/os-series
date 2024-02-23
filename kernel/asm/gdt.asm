@@ -1,3 +1,6 @@
+section .text
+bits 64
+
 global reloadSegments
 reloadSegments:
    ; Reload CS register:

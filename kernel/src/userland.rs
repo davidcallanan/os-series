@@ -19,7 +19,11 @@ impl Userland {
         }
 
         unsafe {
-            asm!("mov {}, rsp", out(reg) TSS_ENTRY.rsp0);
+            let mut rsp0: u64;
+
+            asm!("mov {}, rsp", out(reg) rsp0);
+
+            TSS_ENTRY.rsp0 = rsp0;
 
             let process_base_address = self.process.get_c3_page_map_l4_base_address();
 

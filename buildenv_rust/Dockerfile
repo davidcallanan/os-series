@@ -1,5 +1,7 @@
 FROM debian:latest
 
+# TODO remove everything needed for gcc as we dont use it (only ld)
+
 SHELL ["/bin/bash", "-c"]
 CMD ["/bin/bash"]
 

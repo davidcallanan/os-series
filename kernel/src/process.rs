@@ -1,3 +1,4 @@
+use crate::kprint;
 use core::arch::asm;
 
 pub static mut CURRENT_PROCESS: u64 = core::u64::MAX;
@@ -78,6 +79,46 @@ fn allocate_page_frame() -> u64 {
     return 0;
 }
 
+fn print_page_table_tree_for_cr3() {
+    let mut cr3: u64;
+
+    unsafe {
+        asm!("mov {}, cr3", out(reg) cr3);
+    }
+
+    print_page_table_tree(cr3);
+}
+
+fn print_page_table_tree(start_addr: u64) {
+    let entry_mask = 0x0008_ffff_ffff_f800;
+
+    unsafe {
+        kprint!("start_addr: {:#x}\n", start_addr);
+
+        for l4_entry in 0..512 {
+            let l4bits = *((start_addr + l4_entry * 8) as *const u64);
+            if l4bits != 0 {
+                kprint!("   L4: {} - {:#x}\n", l4_entry, l4bits & entry_mask);
+
+                for l3_entry in 0..512 {
+                    let l3bits = *(((l4bits & entry_mask) + l3_entry * 8) as *const u64);
+                    if l3bits != 0 {
+                        kprint!("      L3: {} - {:#x}\n", l3_entry, l3bits & entry_mask);
+
+                        for l2_entry in 0..512 {
+                            let l2bits = *(((l3bits & entry_mask) + l2_entry * 8) as *const u64);
+
+                            if l2bits != 0 {
+                                kprint!("         L2: {} - {:#x}\n", l2_entry, l2bits & entry_mask);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub struct Process {
     registers: registers_struct,
 
@@ -97,18 +138,30 @@ impl Process {
         // Upper end of page which begins at 0x2000000 = 50 MByte in phys RAM
         // TODO only one page (2MB) yet!
         l2_page_directory_table.entry[511] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
+
+        // TODO Hack: Map video memory to virtual memory
+        l2_page_directory_table.entry[510] = 0x0 | 0b10000111; // bitmask: present, writable, huge page, access from user
+
         l3_page_directory_pointer_table.entry[511] =
-            &l2_page_directory_table as *const _ as u64 | 0b111;
-        l4_page_map_l4_table.entry[511] =
-            &l3_page_directory_pointer_table as *const _ as u64 | 0b111;
+            Process::get_physical_address_for_virtual_address(
+                &l2_page_directory_table as *const _ as u64,
+            ) | 0b111;
+        l4_page_map_l4_table.entry[511] = Process::get_physical_address_for_virtual_address(
+            &l3_page_directory_pointer_table as *const _ as u64,
+        ) | 0b111;
 
         // TODO Hack? map the kernel pages from main.asm to process
         // TODO Later, the kernel pages should be restructed to superuser access; in order to do so, the process code and data must be fully in userspace pages
-        let mut cr3: u64;
-
         unsafe {
+            let mut cr3: u64;
+
             asm!("mov {}, cr3", out(reg) cr3);
-            l4_page_map_l4_table.entry[0] = *(cr3 as *const _);
+
+            l4_page_map_l4_table.entry[256] = *((cr3 + 256 * 8) as *const _);
+
+            print_page_table_tree(Process::get_physical_address_for_virtual_address(
+                &l4_page_map_l4_table as *const _ as u64,
+            ));
         }
 
         Self {
@@ -121,9 +174,45 @@ impl Process {
 
     pub fn launch() {}
 
+    // According to AMD Volume 2, page 146
+    fn get_physical_address_for_virtual_address(vaddr: u64) -> u64 {
+        vaddr - 0xffff800000000000
+
+        /*let page_map_l4_table_offset = (vaddr & 0x0000_ff80_0000_0000) >> 38;
+        let page_directory_pointer_offset = (vaddr & 0x0000_007f_f000_0000) >> 29;
+        let page_directory_offset = (vaddr & 0x0000_000_ff80_0000) >> 20;
+        let page_offset = vaddr & 0x0000_000_007f_ffff;
+
+        unsafe {
+            let mut cr3: u64;
+
+            asm!("mov {}, cr3", out(reg) cr3);
+
+            let page_map_l4_base_address = cr3 & 0x0008_ffff_ffff_f800;
+
+            let entry_mask = 0x0008_ffff_ffff_f800;
+
+            let page_directory_pointer_table_address =
+                *((page_map_l4_base_address + page_map_l4_table_offset * 8) as *const u64)
+                    & entry_mask;
+
+            let page_directory_table_address = *((page_directory_pointer_table_address
+                + page_directory_pointer_offset * 8)
+                as *const u64)
+                & entry_mask;
+
+            let physical_page_address = *((page_directory_table_address + page_directory_offset * 8)
+                as *const u64)
+                & entry_mask;
+
+            return *((physical_page_address + page_offset) as *const u64);
+        }*/
+    }
+
     pub fn get_c3_page_map_l4_base_address(&self) -> u64 {
-        // According to AMD64 Volume 2 p. 146 only bits 13 to 51 are relevant for C3, but the rest seems (?) ignored
-        &(self.l4_page_map_l4_table) as *const _ as u64
+        Process::get_physical_address_for_virtual_address(
+            &(self.l4_page_map_l4_table) as *const _ as u64,
+        )
     }
 
     pub fn get_stack_top_address(&self) -> u64 {
