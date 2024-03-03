@@ -2,15 +2,6 @@
 name = "jos-userland"
 version = "0.1.0"
 
-[dependencies]
-
-# [[bin]]
-# name = "helloworld"
-# edition = "2021"
-# path = "src/main.rs" 
-
-[lib]
+[[bin]]
 name = "helloworld"
 edition = "2021"
-path = "src/helloworld.rs" 
-crate-type = ["staticlib"]

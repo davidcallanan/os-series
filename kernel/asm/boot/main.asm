@@ -79,7 +79,7 @@ setup_page_tables:
 	mov eax, 0x200000 ; 2MiB
 	mul ecx
 	; TODO disable user access generally?
-	or eax, 0b10000111 ; present, writable, huge page, access from user
+	or eax, 0b10000011 ; present, writable, huge page, access from user
 	mov [page_table_l2 + ecx * 8], eax
 
 	inc ecx ; increment counter
@@ -89,7 +89,7 @@ setup_page_tables:
 
 	; TODO map video memory also: probably wrong virtual memory location on the long term; 
 	mov eax, 0x000000
-	or eax, 0b10000111 ; present, writable, huge page, access from user
+	or eax, 0b10000011 ; present, writable, huge page, access from user
 	mov [page_table_l2 + 510 * 8], eax
 
 	ret

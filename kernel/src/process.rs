@@ -125,6 +125,8 @@ pub struct Process {
     l2_page_directory_table: PageTable,
     l3_page_directory_pointer_table: PageTable,
     l4_page_map_l4_table: PageTable,
+
+    entry_ip: u64,
 }
 
 impl Process {
@@ -140,7 +142,7 @@ impl Process {
         l2_page_directory_table.entry[511] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
 
         // TODO Hack: Map video memory to virtual memory
-        l2_page_directory_table.entry[510] = 0x0 | 0b10000111; // bitmask: present, writable, huge page, access from user
+        l2_page_directory_table.entry[510] = 0x0 | 0b10000011; // bitmask: present, writable, huge page, access from user
 
         l3_page_directory_pointer_table.entry[511] =
             Process::get_physical_address_for_virtual_address(
@@ -158,10 +160,32 @@ impl Process {
             asm!("mov {}, cr3", out(reg) cr3);
 
             l4_page_map_l4_table.entry[256] = *((cr3 + 256 * 8) as *const _);
+        }
 
-            print_page_table_tree(Process::get_physical_address_for_virtual_address(
-                &l4_page_map_l4_table as *const _ as u64,
-            ));
+        // allocate two pages page at beginning of virtual memory for elf loading
+        // TODO allocate more if needed
+        let mut l2_page_directory_table_beginning: PageTable = PageTable::new();
+        let mut l3_page_directory_pointer_table_beginning: PageTable = PageTable::new();
+
+        l2_page_directory_table_beginning.entry[0] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
+        l2_page_directory_table_beginning.entry[1] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
+        l3_page_directory_pointer_table_beginning.entry[0] =
+            Process::get_physical_address_for_virtual_address(
+                &l2_page_directory_table_beginning as *const _ as u64,
+            ) | 0b111;
+        l4_page_map_l4_table.entry[0] = Process::get_physical_address_for_virtual_address(
+            &l3_page_directory_pointer_table_beginning as *const _ as u64,
+        ) | 0b111;
+
+        print_page_table_tree(Process::get_physical_address_for_virtual_address(
+            &l4_page_map_l4_table as *const _ as u64,
+        ));
+
+        unsafe {
+            asm!(
+                "mov cr3, {}",
+                in(reg) Process::get_physical_address_for_virtual_address(&l4_page_map_l4_table as *const _ as u64)
+            );
         }
 
         Self {
@@ -169,6 +193,7 @@ impl Process {
             l2_page_directory_table: l2_page_directory_table,
             l3_page_directory_pointer_table: l3_page_directory_pointer_table,
             l4_page_map_l4_table: l4_page_map_l4_table,
+            entry_ip: Process::load_elf_from_bin(),
         }
     }
 
@@ -176,8 +201,10 @@ impl Process {
 
     // According to AMD Volume 2, page 146
     fn get_physical_address_for_virtual_address(vaddr: u64) -> u64 {
+        // Simple variant, only works for kernel memory
         vaddr - 0xffff800000000000
 
+        // TODO get this running
         /*let page_map_l4_table_offset = (vaddr & 0x0000_ff80_0000_0000) >> 38;
         let page_directory_pointer_offset = (vaddr & 0x0000_007f_f000_0000) >> 29;
         let page_directory_offset = (vaddr & 0x0000_000_ff80_0000) >> 20;
@@ -218,5 +245,74 @@ impl Process {
     pub fn get_stack_top_address(&self) -> u64 {
         // Virtual Address, see AMD64 Volume 2 p. 146
         0xffff_ffff_ffff_ffff //3fff --> set 3*9 bits to 1 to identify each topmost entry in each table; fffff --> topmost address in the page; rest also 1 because sign extend
+    }
+
+    pub fn get_entry_ip(&self) -> u64 {
+        self.entry_ip
+    }
+
+    pub fn load_elf_from_bin() -> u64 {
+        extern "C" {
+            static mut _binary_build_userspace_x86_64_unknown_none_debug_helloworld_start: u8;
+            static mut _binary_build_userspace_x86_64_unknown_none_debug_helloworld_end: u8;
+        }
+
+        unsafe {
+            kprint!(
+                "embedded elf file\nstart: {:x}\n  end: {:x}\n",
+                &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start as *const u8
+                    as usize,
+                &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_end as *const u8
+                    as usize
+            );
+
+            let size = &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_end
+                as *const u8 as usize
+                - &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start as *const u8
+                    as usize;
+
+            let slice = core::slice::from_raw_parts(
+                &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start,
+                size,
+            );
+
+            use elf::abi::PT_LOAD;
+            use elf::endian::AnyEndian;
+
+            let file = elf::ElfBytes::<AnyEndian>::minimal_parse(slice).expect("Open test1");
+
+            let elf_header = file.ehdr;
+
+            kprint!("Entry point is at: {:x}\n", elf_header.e_entry);
+
+            let program_headers = file
+                .segments()
+                .unwrap()
+                .iter()
+                .filter(|phdr| phdr.p_type == PT_LOAD);
+
+            for phdr in program_headers {
+                kprint!(
+                    "Load segment is at: {:x}\nMem Size is: {:x}\n",
+                    phdr.p_vaddr,
+                    phdr.p_memsz
+                );
+
+                asm!(
+                    "mov rcx, {}
+                    mov rsi, {}
+                    mov rdi, {}
+                    rep movsb",
+                    in(reg) phdr.p_memsz,
+                    in(reg) &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start as *const u8 as usize + phdr.p_offset as usize,
+                    in(reg) phdr.p_vaddr,
+                    out("rcx") _,
+                    out("rsi") _,
+                    out("rdi") _
+                )
+            }
+
+            elf_header.e_entry
+        }
     }
 }

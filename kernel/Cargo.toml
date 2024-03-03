@@ -4,6 +4,10 @@ version = "0.1.0"
 
 [dependencies]
 
+[dependencies.elf]
+version = "0.7.4"
+default-features = false
+
 [lib]
 name = "jos"
 edition = "2021"

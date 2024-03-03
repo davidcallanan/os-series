@@ -12,8 +12,7 @@ fn panic(info: &PanicInfo) -> ! {
 }
 
 #[no_mangle]
-// Inside here the CPL register should be 3 (CPL=3) --> we are in user land / ring 3
-pub extern "C" fn main() {
+pub fn _start() {
     loop {
         printf!("Hellö Wörld! I am process {}", libc::getpid());
     }

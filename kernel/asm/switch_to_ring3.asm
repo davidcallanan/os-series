@@ -11,6 +11,8 @@ global jump_usermode
 extern main
 extern TSS_ENTRY
 jump_usermode:
+	push rdx ; push rdx (3rd call parameter) as it will be overwritten until its used
+
 	; enable system call extensions that enable sysret and syscall
 	mov rcx, 0xc0000080
 	rdmsr
@@ -33,7 +35,8 @@ jump_usermode:
 	mov edx, 0xffff8000
 	wrmsr
 
-	mov rcx, QWORD main ; to be loaded into RIP
+	pop rdx;
+	mov rcx, rdx ; to be loaded into RIP
 	mov r11, 0x202 ; to be loaded into EFLAGS
 
 	; Attention: CR3 consumes physical addresses!
@@ -53,12 +56,8 @@ syscall_handler:
 	push r11 ; syscall has set r11 to the rflags
 	push rsp
 
-	push_all_registers
-
 	mov rax, QWORD system_call
 	call rax
-
-	pop_all_registers
 
 	pop rsp
 	pop r11
@@ -67,19 +66,3 @@ syscall_handler:
     swapgs
 
 	o64 sysret
-
-global trigger_syscall
-trigger_syscall:
-	push r11
-	push rcx
-
-	push_all_registers
-
-	syscall
-
-	pop_all_registers
-
-	pop rcx
-	pop r11
-
-	ret

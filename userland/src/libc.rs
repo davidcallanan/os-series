@@ -15,15 +15,20 @@ pub fn getpid() -> u64 {
 
             mov rdx, {0:r}
 
-            call {1}
+            push r11
+            push rcx
+        
+            syscall
+        
+            pop rcx
+            pop r11
 
-            mov {2:r}, rdx
+            mov {1:r}, rdx
 
             pop rcx
             pop rdx
         ",
             in(reg) 2,
-            sym trigger_syscall,
             out(reg) pid
         );
     }
@@ -45,7 +50,13 @@ pub fn write(filedescriptor: i64, payload: &[u8]) {
             mov r8, {1:r}
             mov r9, {2:r}
 
-            call {3}
+            push r11
+            push rcx
+        
+            syscall
+        
+            pop rcx
+            pop r11
 
             pop rcx
             pop r9
@@ -56,7 +67,6 @@ pub fn write(filedescriptor: i64, payload: &[u8]) {
             in(reg) filedescriptor,
             in(reg) payload.as_ptr(),
             in(reg) payload.len(),
-            sym trigger_syscall,
             out("rcx") _,
             out("r9") _,
             out("r8") _,

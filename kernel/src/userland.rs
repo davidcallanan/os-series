@@ -15,7 +15,7 @@ impl Userland {
 
     pub fn switch_to_userland(self) {
         extern "C" {
-            fn jump_usermode(process_base_address: u64, stack_top_address: u64);
+            fn jump_usermode(process_base_address: u64, stack_top_address: u64, entry_address: u64);
         }
 
         unsafe {
@@ -25,13 +25,13 @@ impl Userland {
 
             TSS_ENTRY.rsp0 = rsp0;
 
-            let process_base_address = self.process.get_c3_page_map_l4_base_address();
-
-            let stack_top_address = self.process.get_stack_top_address();
-
             CURRENT_PROCESS = 0;
 
-            jump_usermode(process_base_address, stack_top_address);
+            jump_usermode(
+                self.process.get_c3_page_map_l4_base_address(),
+                self.process.get_stack_top_address(),
+                self.process.get_entry_ip(),
+            );
         }
     }
 }
