@@ -1,12 +1,8 @@
 use core::arch::asm;
 
-extern "C" {
-    fn trigger_syscall();
-}
-
 //pid_t getppid(void);
 pub fn getpid() -> u64 {
-    let mut pid = core::u64::MAX;
+    let mut _pid = core::u64::MAX;
 
     unsafe {
         asm!("
@@ -29,11 +25,11 @@ pub fn getpid() -> u64 {
             pop rdx
         ",
             in(reg) 2,
-            out(reg) pid
+            out(reg) _pid
         );
     }
 
-    pid
+    return _pid;
 }
 
 pub fn write(filedescriptor: i64, payload: &[u8]) {

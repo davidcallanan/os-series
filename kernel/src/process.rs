@@ -5,27 +5,27 @@ pub static mut CURRENT_PROCESS: u64 = core::u64::MAX;
 
 // stores a process' registers when it gets interrupted
 #[derive(Default)]
-struct registers_struct {
-    rax: u64,
-    rbx: u64,
-    rcx: u64,
-    rdx: u64,
-    rsi: u64,
-    rdi: u64,
-    rbp: u64,
-    rsp: u64,
-    r8: u64,
-    r9: u64,
-    r10: u64,
-    r11: u64,
-    r12: u64,
-    r13: u64,
-    r14: u64,
-    r15: u64,
-    rip: u64,
-    rfl: u64,
-    cs: u64,
-    ss: u64,
+struct RegistersStruct {
+    _rax: u64,
+    _rbx: u64,
+    _rcx: u64,
+    _rdx: u64,
+    _rsi: u64,
+    _rdi: u64,
+    _rbp: u64,
+    _rsp: u64,
+    _r8: u64,
+    _r9: u64,
+    _r10: u64,
+    _r11: u64,
+    _r12: u64,
+    _r13: u64,
+    _r14: u64,
+    _r15: u64,
+    _rip: u64,
+    _rfl: u64,
+    _cs: u64,
+    _ss: u64,
 }
 
 #[repr(C)]
@@ -36,7 +36,7 @@ struct PageTable {
 
 impl PageTable {
     pub fn new() -> Self {
-        let mut entries: [u64; 512] = [0; 512];
+        let entries: [u64; 512] = [0; 512];
         // TODO start with providing only the upmost pages for a process stack (lower end to do)
         //entries[511] = 0b111; // present, writable, access from user
         Self { entry: entries }
@@ -79,7 +79,7 @@ fn allocate_page_frame() -> u64 {
     return 0;
 }
 
-fn print_page_table_tree_for_cr3() {
+fn _print_page_table_tree_for_cr3() {
     let mut cr3: u64;
 
     unsafe {
@@ -120,10 +120,10 @@ fn print_page_table_tree(start_addr: u64) {
 }
 
 pub struct Process {
-    registers: registers_struct,
+    _registers: RegistersStruct,
 
-    l2_page_directory_table: PageTable,
-    l3_page_directory_pointer_table: PageTable,
+    _l2_page_directory_table: PageTable,
+    _l3_page_directory_pointer_table: PageTable,
     l4_page_map_l4_table: PageTable,
 
     entry_ip: u64,
@@ -189,15 +189,15 @@ impl Process {
         }
 
         Self {
-            registers: Default::default(),
-            l2_page_directory_table: l2_page_directory_table,
-            l3_page_directory_pointer_table: l3_page_directory_pointer_table,
+            _registers: Default::default(),
+            _l2_page_directory_table: l2_page_directory_table,
+            _l3_page_directory_pointer_table: l3_page_directory_pointer_table,
             l4_page_map_l4_table: l4_page_map_l4_table,
             entry_ip: Process::load_elf_from_bin(),
         }
     }
 
-    pub fn launch() {}
+    pub fn _launch() {}
 
     // According to AMD Volume 2, page 146
     fn get_physical_address_for_virtual_address(vaddr: u64) -> u64 {
