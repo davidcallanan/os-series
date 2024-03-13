@@ -6,6 +6,9 @@ use crate::kprint;
 use crate::kprintln;
 use crate::time;
 use core::arch::asm;
+use core::arch::global_asm;
+
+global_asm!(include_str!("interrupt.S"));
 
 #[repr(C, packed(2))]
 #[derive(Clone, Copy)]

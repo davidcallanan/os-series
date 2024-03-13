@@ -1,6 +1,9 @@
 use crate::gdt::TSS_ENTRY;
 use crate::process::{Process, CURRENT_PROCESS};
 use core::arch::asm;
+use core::arch::global_asm;
+
+global_asm!(include_str!("switch_to_ring3.S"));
 
 pub struct Userland {
     process: Process,

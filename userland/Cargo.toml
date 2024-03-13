@@ -5,3 +5,4 @@ version = "0.1.0"
 [[bin]]
 name = "helloworld"
 edition = "2021"
+path = "src/main.rs"

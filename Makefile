@@ -9,7 +9,7 @@ $(x86_64_asm_object_files): build/x86_64/%.o : kernel/asm/%.asm
 .PHONY: build-x86_64
 build-x86_64: $(x86_64_asm_object_files)
 	mkdir -p build/kernel && \
-	cargo rustc --manifest-path kernel/Cargo.toml --target-dir build/kernel/ -- -C no-redzone=on -C target-feature=-sse
+	cargo rustc --manifest-path kernel/Cargo.toml --target-dir build/kernel/ -- -C no-redzone=on -C target-feature=-sse -C link-arg=-Ttargets/x86_64/linker.ld
 	cargo rustc --manifest-path userland/Cargo.toml --target-dir build/userspace/ -- -C relocation-model=static -C no-redzone=on -C target-feature=-sse
 	mkdir -p dist/x86_64 && \
 	objcopy --input binary --output elf64-x86-64 --binary-architecture i386 build/userspace/x86_64-unknown-none/debug/helloworld build/userspace/x86_64-unknown-none/debug/helloworld.o && \

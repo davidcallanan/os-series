@@ -1,5 +1,6 @@
 use crate::logging;
 use core::arch::asm;
+use core::arch::global_asm;
 use core::mem;
 
 // https://wiki.osdev.org/GDT_Tutorial
@@ -7,6 +8,8 @@ use core::mem;
 // https://blog.llandsmeer.com/tech/2019/07/21/uefi-x64-userland.html
 // http://www.osdever.net/bkerndev/Docs/gdt.htm
 // http://tuttlem.github.io/2014/07/11/a-gdt-primer.html
+
+global_asm!(include_str!("gdt.S"));
 
 #[repr(C)]
 #[repr(packed)]
