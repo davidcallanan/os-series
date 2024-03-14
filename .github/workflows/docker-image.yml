@@ -22,11 +22,19 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
+      - name: Build and push Docker
         uses: docker/build-push-action@v5
         with:
-          context: "{{defaultContext}}:buildenv_rust"
+          context: "buildenv_rust/"
           push: true
           tags: jbreu/jos:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build jos
+        uses: addnab/docker-run-action@v3
+        with:
+          image: jbreu/jos:latest
+          options: -v ${{ github.workspace }}:/root/env
+          run: |
+            . $HOME/.cargo/env
+            make build-x86_64
