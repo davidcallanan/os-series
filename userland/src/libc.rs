@@ -1,15 +1,14 @@
 use core::arch::asm;
 
 //pid_t getppid(void);
+
 pub fn getpid() -> u64 {
-    let mut _pid = core::u64::MAX;
+    let mut _pid = 0xdeadbeef;
 
     unsafe {
         asm!("
-            push rdx
-            push rcx
-
-            mov rdx, {0:r}
+            push rdi
+            mov rdi, 2
 
             push r11
             push rcx
@@ -18,33 +17,21 @@ pub fn getpid() -> u64 {
         
             pop rcx
             pop r11
-
-            mov {1:r}, rdx
-
-            pop rcx
-            pop rdx
-        ",
-            in(reg) 2,
-            out(reg) _pid
+            pop rdi
+            ",
+            out("rax") _pid,
+            options(nostack)
         );
     }
 
     return _pid;
 }
 
-pub fn write(filedescriptor: i64, payload: &[u8]) {
+pub fn write(filedescriptor: i64, payload: *const u64, len: usize) {
     unsafe {
         asm!("
-            push rdx
-            push r10
-            push r8
-            push r9
-            push rcx
-
-            mov rdx, 1
-            mov r10, {0:r}
-            mov r8, {1:r}
-            mov r9, {2:r}
+            push rdi
+            mov rdi, 1
 
             push r11
             push rcx
@@ -53,21 +40,14 @@ pub fn write(filedescriptor: i64, payload: &[u8]) {
         
             pop rcx
             pop r11
-
-            pop rcx
-            pop r9
-            pop r8
-            pop r10
-            pop rdx
+            
+            pop rdi
         ",
-            in(reg) filedescriptor,
-            in(reg) payload.as_ptr(),
-            in(reg) payload.len(),
-            out("rcx") _,
-            out("r9") _,
-            out("r8") _,
-            out("r10") _,
-            out("rdx") _,
+            in("r8") filedescriptor,
+            in("r9") payload as u64,
+            in("r10") len,
+            options(nostack),
+            clobber_abi("C")
         );
     }
 }
@@ -76,7 +56,7 @@ pub struct Printer {}
 
 impl core::fmt::Write for Printer {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        write(1, s.as_bytes());
+        write(1, s.as_bytes().as_ptr() as *const u64, s.len());
         Ok(())
     }
 }

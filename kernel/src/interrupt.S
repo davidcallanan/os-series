@@ -2,10 +2,19 @@
 // https://wiki.osdev.org/ISR
 // https://wiki.osdev.org/Interrupts_Tutorial
 
-.section .text
 .code64
 
-//%include "kernel/asm/macros.mac"
+.section .data
+pushed_registers:
+    .quad 0
+.globl pushed_registers
+stack_frame:
+    .quad 0
+.globl stack_frame
+int_no:
+    .quad 0
+
+.section .text
 
 .macro push_all_registers
     push rax
@@ -15,7 +24,6 @@
     push rsi
     push rdi
     push rbp
-    push rsp
     push r8
     push r9
     push r10
@@ -24,6 +32,7 @@
     push r13
     push r14
     push r15
+    mov [rip + pushed_registers], rsp
 .endm
 
 .macro pop_all_registers
@@ -35,7 +44,6 @@
     pop r10
     pop r9
     pop r8
-    pop rsp
     pop rbp
     pop rdi
     pop rsi
@@ -49,8 +57,8 @@
     .globl isr\isr
     isr\isr\():
         cli
-        push dword ptr 0
-        push dword ptr \isr
+        push qword ptr 0
+        push qword ptr \isr
         jmp isr_common_stub
 .endm
 
@@ -58,7 +66,7 @@
     .globl isr\isr
     isr\isr\():
         cli
-        push dword ptr \isr
+        push qword ptr \isr
         jmp isr_common_stub
 .endm
 
@@ -66,8 +74,9 @@
     .globl irq\irq
     irq\irq\():
         cli
-        push dword ptr 0
-        push dword ptr \number
+        mov qword ptr [rip + int_no], \number
+        mov [rip + stack_frame], rsp
+        push_all_registers
         jmp irq_common_stub
 .endm
 
@@ -151,18 +160,13 @@ isr_common_stub:
 	iretq
 
 irq_common_stub:
-    push rdi
 
-	mov rdi, [rsp+8]
+    mov rdi, [rip + int_no]
 
-    push_all_registers
     lea rax, [rip + irq_handler]
 	call rax
 
     pop_all_registers
 
-    pop rdi
-
-	add rsp, 16 // "pop" the two longs we have pushed originally
 	sti
 	iretq

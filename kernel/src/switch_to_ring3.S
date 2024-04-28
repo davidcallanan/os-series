@@ -31,32 +31,39 @@ jump_usermode:
 	mov edx, 0xffff8000
 	wrmsr
 
-	pop rdx//
+	pop rdx
 	mov rcx, rdx // to be loaded into RIP
 	mov r11, 0x202 // to be loaded into EFLAGS
 
 	// Attention: CR3 consumes physical addresses!
 	mov cr3, rdi
 	
-	// TODO Setting the stack pointer for userland process to max value (rsi is passed from rust code)
 	mov rsp, rsi
+
+	
+	// TODO Investigate: Only enable interrupts here (pretty late), because otherwise during jump to usermode interrupt may appear, leading to weird behavior
+	sti
 
 	sysretq //use "o64 sysret" if you assemble with NASM
 
 syscall_handler:
+	cli // TODO Hack: No task switches during syscalls (due to stack issues)
+	
     swapgs
 	
+	// FIXME SECURITY somewhere here we should change the stack pointer to kernel space; see e.g. https://supercip971.github.io/02-wingos-syscalls.html
+
 	push rcx // syscall has set ecx to the rip of the userland process
 	push r11 // syscall has set r11 to the rflags
-	push rsp
 
 	lea rax, [rip + system_call]
 	call rax
 
-	pop rsp
 	pop r11
 	pop rcx 
 
     swapgs
+
+	sti
 
 	sysretq

@@ -5,6 +5,8 @@ use crate::keyboard;
 use crate::kprint;
 use crate::kprintln;
 use crate::time;
+use crate::userland;
+use crate::USERLAND;
 use core::arch::asm;
 use core::arch::global_asm;
 
@@ -78,9 +80,30 @@ pub extern "C" fn isr_handler(error_code: u64, int_no: u64) {
 
 #[no_mangle]
 pub extern "C" fn irq_handler(int_no: u64) {
+    // TODO make this a verbose log
+    /*extern "C" {
+        static mut stack_frame: *const u64;
+    }
+
+    unsafe {
+        kprint!("Stack frame: {:x}\n", stack_frame as u64);
+        kprint!(" RIP: {:x}\n", *(stack_frame.add(0)) as u64);
+        kprint!(" RSP: {:x}\n", *(stack_frame.add(3)) as u64);
+
+        let stack = *(stack_frame.add(3)) as *const u64;
+        for i in 0..8 {
+            kprint!("   {:x}", stack.add(i).read_unaligned() as u64);
+        }
+        kprint!("\n");
+    }*/
+
     match (int_no - 32) as u64 {
         // Clock
-        0 => time::update_clock(),
+        0 => {
+            userland::schedule();
+            time::update_clock();
+            kprint::kprint_integer_at_pos(USERLAND.lock().get_current_process_id() as i64, 1, 70);
+        }
         // Keyboard action
         1 => {
             let mut key: i8;
@@ -90,9 +113,24 @@ pub extern "C" fn irq_handler(int_no: u64) {
             }
 
             kprint!("{}", keyboard::get_key_for_scancode(key as u8));
+
+            userland::schedule();
         }
         _ => {}
     }
+
+    // TODO make this a verbose log
+    /*unsafe {
+        kprint!("Stack frame: {:x}\n", stack_frame as u64);
+        kprint!(" RIP: {:x}\n", *(stack_frame.add(0)) as u64);
+        kprint!(" RSP: {:x}\n", *(stack_frame.add(3)) as u64);
+
+        let stack = *(stack_frame.add(3)) as *const u64;
+        for i in 0..8 {
+            kprint!("   {:x}", stack.add(i).read_unaligned() as u64);
+        }
+        kprint!("\n");
+    }*/
 
     if int_no >= 40 {
         out_port_b(0xA0, 0x20);
@@ -161,6 +199,7 @@ pub fn init_idt() {
 
     // Set PIC mask to only let keyboard irqs through
     // https://wiki.osdev.org/I_Can%27t_Get_Interrupts_Working#IRQ_problems
+    // FIXME comment
     //out_port_b(0x21, 0xfd);
     //out_port_b(0xA1, 0xff);
 
@@ -527,8 +566,7 @@ pub fn init_idt() {
             base: IDT_ENTRIES.as_ptr() as u64, //(((IDT_ENTRIES.as_ptr() as u64) << 16) as i64 >> 16) as u64,
         };
         asm!(
-            "lidt [{}]
-            sti",
+            "lidt [{}]",
             in(reg) &idt_ptr, options(readonly, nostack, preserves_flags)
         );
     }

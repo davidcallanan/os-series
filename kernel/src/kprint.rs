@@ -85,8 +85,8 @@ pub fn clear() {
 fn scroll_line() {
     for column in 0..80 {
         for row in 0..24 {
-            // Exception for clock
-            if row == 0 && column >= 70 {
+            // Exception for clock and current process
+            if row <= 1 && column >= 70 {
                 continue;
             }
             unsafe {

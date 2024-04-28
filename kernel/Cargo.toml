@@ -4,9 +4,22 @@ version = "0.1.0"
 
 [dependencies]
 
+[dependencies.heapless]
+version = "0.8.0"
+default-features = false
+
+[dependencies.spin]
+version = "0.9.8"
+default-features = false
+features = ["mutex", "spin_mutex"]
+
 [dependencies.elf]
 version = "0.7.4"
 default-features = false
+
+[dependencies.lazy_static]
+version = "1.4.0"
+features = ["spin_no_std"]
 
 [lib]
 name = "jos"

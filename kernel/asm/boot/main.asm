@@ -135,7 +135,7 @@ page_table_l2:
 	resb 4096
 ; TODO Why is stack in bss? Does this make sense? Also Stack is pretty small
 stack_bottom:
-	resb 4096 * 100
+	resb 4096 * 4000
 stack_top:
 
 section .bootrodata

@@ -21,6 +21,18 @@ Get Qemu from here: https://qemu.weilnetz.de/ ?
 https://wiki.osdev.org/QEMU#Useful_QEMU_command-line_options
 
 
+
+## Reverse Debugging via qemu
+
+https://www.qemu.org/docs/master/system/replay.html
+
+- `qemu-img create -f qcow2 empty.qcow2 1G`
+- `qemu-system-x86_64 -s -S -d int,cpu_reset,guest_errors -action panic=pause -no-reboot  -monitor stdio -cdrom dist/x86_64/kernel.iso -icount shift=auto,rr=record,rrfile=record.bin,rrsnapshot=init -net none -drive file=empty.qcow2,if=none,id=rr`
+- `savevm TAG` (multiple times if needed)
+- `quit`
+- `qemu-system-x86_64 -s -S -d int,cpu_reset,guest_errors -action panic=pause -no-reboot  -monitor stdio -cdrom dist/x86_64/kernel.iso -icount shift=auto,rr=replay,rrfile=record.bin,rrsnapshot=init -net none -drive file=empty.qcow2,if=none,id=rr`
+- `loadvm TAG`
+
 # Write Your Own 64-bit Operating System Kernel From Scratch
 
 This respository holds all the source code for [this YouTube tutorial series](https://www.youtube.com/playlist?list=PLZQftyCk7_SeZRitx5MjBKzTtvk0pHMtp).

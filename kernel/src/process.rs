@@ -1,31 +1,29 @@
 use crate::kprint;
 use core::arch::asm;
+use core::ptr::addr_of;
 
-pub static mut CURRENT_PROCESS: u64 = core::u64::MAX;
+static mut KERNEL_CR3: u64 = 0;
 
 // stores a process' registers when it gets interrupted
+#[repr(C)]
 #[derive(Default)]
 struct RegistersStruct {
-    _rax: u64,
-    _rbx: u64,
-    _rcx: u64,
-    _rdx: u64,
-    _rsi: u64,
-    _rdi: u64,
-    _rbp: u64,
-    _rsp: u64,
-    _r8: u64,
-    _r9: u64,
-    _r10: u64,
-    _r11: u64,
-    _r12: u64,
-    _r13: u64,
-    _r14: u64,
-    _r15: u64,
-    _rip: u64,
-    _rfl: u64,
-    _cs: u64,
-    _ss: u64,
+    // Has to be always in sync with asm macro "pop_all_registers"
+    r15: u64,
+    r14: u64,
+    r13: u64,
+    r12: u64,
+    r11: u64,
+    r10: u64,
+    r9: u64,
+    r8: u64,
+    rbp: u64,
+    rdi: u64,
+    rsi: u64,
+    rdx: u64,
+    rcx: u64,
+    rbx: u64,
+    rax: u64,
 }
 
 #[repr(C)]
@@ -35,11 +33,8 @@ struct PageTable {
 }
 
 impl PageTable {
-    pub fn new() -> Self {
-        let entries: [u64; 512] = [0; 512];
-        // TODO start with providing only the upmost pages for a process stack (lower end to do)
-        //entries[511] = 0b111; // present, writable, access from user
-        Self { entry: entries }
+    fn default() -> Self {
+        Self { entry: [0; 512] }
     }
 }
 
@@ -61,6 +56,9 @@ static mut AVAILABLE_MEMORY: [bool; MAX_PAGE_FRAMES] = {
     array[7] = true;
     array[8] = true;
     array[9] = true;
+
+    // TODO Stack for interrupts, see HackID1
+    array[10] = true;
     array
 };
 
@@ -83,10 +81,17 @@ fn _print_page_table_tree_for_cr3() {
     let mut cr3: u64;
 
     unsafe {
-        asm!("mov {}, cr3", out(reg) cr3);
+        asm!("mov r12, cr3", out("r12") cr3);
     }
 
     print_page_table_tree(cr3);
+}
+
+fn check_half(entry: *const u64) -> *const u64 {
+    if entry < 0xffff800000000000 as *const u64 {
+        return (entry as u64 + 0xffff800000000000 as u64) as *const u64;
+    }
+    entry
 }
 
 fn print_page_table_tree(start_addr: u64) {
@@ -96,17 +101,18 @@ fn print_page_table_tree(start_addr: u64) {
         kprint!("start_addr: {:#x}\n", start_addr);
 
         for l4_entry in 0..512 {
-            let l4bits = *((start_addr + l4_entry * 8) as *const u64);
+            let l4bits = *check_half((start_addr + l4_entry * 8) as *const u64);
             if l4bits != 0 {
                 kprint!("   L4: {} - {:#x}\n", l4_entry, l4bits & entry_mask);
 
                 for l3_entry in 0..512 {
-                    let l3bits = *(((l4bits & entry_mask) + l3_entry * 8) as *const u64);
+                    let l3bits = *check_half(((l4bits & entry_mask) + l3_entry * 8) as *const u64);
                     if l3bits != 0 {
                         kprint!("      L3: {} - {:#x}\n", l3_entry, l3bits & entry_mask);
 
                         for l2_entry in 0..512 {
-                            let l2bits = *(((l3bits & entry_mask) + l2_entry * 8) as *const u64);
+                            let l2bits =
+                                *check_half(((l3bits & entry_mask) + l2_entry * 8) as *const u64);
 
                             if l2bits != 0 {
                                 kprint!("         L2: {} - {:#x}\n", l2_entry, l2bits & entry_mask);
@@ -119,85 +125,234 @@ fn print_page_table_tree(start_addr: u64) {
     }
 }
 
-pub struct Process {
-    _registers: RegistersStruct,
+enum ProcessState {
+    New,
+    Prepared,
+    Active,
+    Passive,
+}
 
-    _l2_page_directory_table: PageTable,
-    _l3_page_directory_pointer_table: PageTable,
+pub struct Process {
+    registers: RegistersStruct,
+
+    l2_page_directory_table: PageTable,
+    l3_page_directory_pointer_table: PageTable,
     l4_page_map_l4_table: PageTable,
 
-    entry_ip: u64,
+    l2_page_directory_table_beginning: PageTable,
+    l3_page_directory_pointer_table_beginning: PageTable,
+
+    rip: u64,
+    rsp: u64,
+    cr3: u64,
+    ss: u64,
+    cs: u64,
+    rflags: u64,
+
+    state: ProcessState,
 }
 
 impl Process {
     pub fn new() -> Self {
-        // Initialize paging
-        let mut l2_page_directory_table: PageTable = PageTable::new();
-        let mut l3_page_directory_pointer_table: PageTable = PageTable::new();
-        let mut l4_page_map_l4_table: PageTable = PageTable::new();
+        Self {
+            registers: RegistersStruct::default(),
+            l2_page_directory_table: PageTable::default(),
+            l2_page_directory_table_beginning: PageTable::default(),
+            l3_page_directory_pointer_table: PageTable::default(),
+            l3_page_directory_pointer_table_beginning: PageTable::default(),
+            l4_page_map_l4_table: PageTable::default(),
 
+            rip: 0,
+            cr3: 0,
+            ss: 0x1b,
+            cs: 0x23,
+            rflags: 0x202,
+            rsp: 0,
+            state: ProcessState::New,
+        }
+    }
+
+    pub fn initialize(&mut self) {
         // TODO remove hard coding
+        // TODO Task stack
         // Upper end of page which begins at 0x2000000 = 50 MByte in phys RAM
         // TODO only one page (2MB) yet!
-        l2_page_directory_table.entry[511] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
+        self.l2_page_directory_table.entry[511] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
 
-        // TODO Hack: Map video memory to virtual memory
-        l2_page_directory_table.entry[510] = 0x0 | 0b10000011; // bitmask: present, writable, huge page, access from user
+        // TODO HackID1: Fixed kernel stack for interrupts (starts at 20 MByte)
+        self.l2_page_directory_table.entry[510] = 10 * 0x200000 | 0b10000011; // bitmask: present, writable, huge page
 
-        l3_page_directory_pointer_table.entry[511] =
+        self.l3_page_directory_pointer_table.entry[511] =
             Process::get_physical_address_for_virtual_address(
-                &l2_page_directory_table as *const _ as u64,
+                &self.l2_page_directory_table as *const _ as u64,
             ) | 0b111;
-        l4_page_map_l4_table.entry[511] = Process::get_physical_address_for_virtual_address(
-            &l3_page_directory_pointer_table as *const _ as u64,
+        self.l4_page_map_l4_table.entry[511] = Process::get_physical_address_for_virtual_address(
+            &self.l3_page_directory_pointer_table as *const _ as u64,
+        ) | 0b111;
+
+        // allocate two pages page at beginning of virtual memory for elf loading
+        // TODO allocate more if needed
+
+        self.l2_page_directory_table_beginning.entry[0] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
+        self.l2_page_directory_table_beginning.entry[1] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
+        self.l3_page_directory_pointer_table_beginning.entry[0] =
+            Process::get_physical_address_for_virtual_address(
+                &self.l2_page_directory_table_beginning as *const _ as u64,
+            ) | 0b111;
+        self.l4_page_map_l4_table.entry[0] = Process::get_physical_address_for_virtual_address(
+            &self.l3_page_directory_pointer_table_beginning as *const _ as u64,
         ) | 0b111;
 
         // TODO Hack? map the kernel pages from main.asm to process
         // TODO Later, the kernel pages should be restructed to superuser access; in order to do so, the process code and data must be fully in userspace pages
         unsafe {
-            let mut cr3: u64;
+            if KERNEL_CR3 == 0 {
+                asm!("mov r15, cr3", out("r15") KERNEL_CR3);
+            }
 
-            asm!("mov {}, cr3", out(reg) cr3);
+            kprint!("Kernel CR3: {:x}\n", KERNEL_CR3);
 
-            l4_page_map_l4_table.entry[256] = *((cr3 + 256 * 8) as *const _);
+            self.l4_page_map_l4_table.entry[256] = *((KERNEL_CR3 + 256 * 8) as *const _);
         }
 
-        // allocate two pages page at beginning of virtual memory for elf loading
-        // TODO allocate more if needed
-        let mut l2_page_directory_table_beginning: PageTable = PageTable::new();
-        let mut l3_page_directory_pointer_table_beginning: PageTable = PageTable::new();
+        // TODO Here we load the new pagetable into cr3 for the first process. This needs to happen because otherwise we cant load the programm into the first pages. This is a hack I think
+        self.cr3 = Process::get_physical_address_for_virtual_address(
+            &self.l4_page_map_l4_table as *const _ as u64,
+        );
 
-        l2_page_directory_table_beginning.entry[0] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
-        l2_page_directory_table_beginning.entry[1] = allocate_page_frame() | 0b10000111; // bitmask: present, writable, huge page, access from user
-        l3_page_directory_pointer_table_beginning.entry[0] =
-            Process::get_physical_address_for_virtual_address(
-                &l2_page_directory_table_beginning as *const _ as u64,
-            ) | 0b111;
-        l4_page_map_l4_table.entry[0] = Process::get_physical_address_for_virtual_address(
-            &l3_page_directory_pointer_table_beginning as *const _ as u64,
-        ) | 0b111;
+        kprint!("Process CR3: {:x}\n", self.cr3);
 
-        print_page_table_tree(Process::get_physical_address_for_virtual_address(
-            &l4_page_map_l4_table as *const _ as u64,
-        ));
+        unsafe {
+            print_page_table_tree(KERNEL_CR3 as u64);
+        }
+        // FIXME THIS IS BROKEN!
 
         unsafe {
             asm!(
-                "mov cr3, {}",
-                in(reg) Process::get_physical_address_for_virtual_address(&l4_page_map_l4_table as *const _ as u64)
+                "mov cr3, r15",
+                in("r15") self.cr3,
+                options(nostack, preserves_flags)
             );
         }
 
-        Self {
-            _registers: Default::default(),
-            _l2_page_directory_table: l2_page_directory_table,
-            _l3_page_directory_pointer_table: l3_page_directory_pointer_table,
-            l4_page_map_l4_table: l4_page_map_l4_table,
-            entry_ip: Process::load_elf_from_bin(),
+        print_page_table_tree(&self.l4_page_map_l4_table as *const _ as u64);
+
+        self.rsp = 0xffff_ffff_ffff_ffff;
+
+        self.rip = Process::load_elf_from_bin();
+
+        unsafe {
+            asm!(
+                "mov cr3, r15",
+                in("r15") KERNEL_CR3,
+                options(nostack, preserves_flags)
+            );
+        }
+
+        self.ss = 0x1b;
+        self.cs = 0x23;
+        self.rflags = 0x202;
+        self.state = ProcessState::Prepared;
+    }
+
+    pub fn launch(&mut self) {
+        self.state = ProcessState::Passive;
+    }
+
+    pub fn activate(&mut self, initial_start: bool) {
+        extern "C" {
+            static mut pushed_registers: *mut RegistersStruct;
+            static mut stack_frame: *mut u64;
+        }
+
+        unsafe {
+            kprint!("Stack frame: {:x}\n", stack_frame as u64);
+            kprint!("Pushed registers: {:x}\n", pushed_registers as u64);
+
+            if !initial_start {
+                (*pushed_registers).r15 = self.registers.r15;
+                (*pushed_registers).r14 = self.registers.r14;
+                (*pushed_registers).r13 = self.registers.r13;
+                (*pushed_registers).r12 = self.registers.r12;
+                (*pushed_registers).r11 = self.registers.r11;
+                (*pushed_registers).r10 = self.registers.r10;
+                (*pushed_registers).r9 = self.registers.r9;
+                (*pushed_registers).r8 = self.registers.r8;
+                (*pushed_registers).rbp = self.registers.rbp;
+                (*pushed_registers).rsi = self.registers.rsi;
+                (*pushed_registers).rdx = self.registers.rdx;
+                (*pushed_registers).rcx = self.registers.rcx;
+                (*pushed_registers).rbx = self.registers.rbx;
+                (*pushed_registers).rax = self.registers.rax;
+
+                core::ptr::write_volatile(stack_frame.add(0), self.rip);
+                core::ptr::write_volatile(stack_frame.add(1), self.cs);
+                core::ptr::write_volatile(stack_frame.add(2), self.rflags);
+                core::ptr::write_volatile(stack_frame.add(3), self.rsp);
+                core::ptr::write_volatile(stack_frame.add(4), self.ss);
+            }
+
+            //  HIER!!!!!!!!
+            //schreibe zwar was in den Stack, aber dann lade ich per cr3 ja neues paging!!!!
+
+            // x /20xg 0xffffffffffcfffb8
+            asm!(
+                "mov cr3, r15",
+                in("r15") self.cr3,
+                options(nostack, preserves_flags),
+                clobber_abi("C")
+            );
+
+            //TSS_ENTRY.rsp0 = self.get_tss_rsp0();
+        }
+
+        self.state = ProcessState::Active;
+    }
+
+    pub fn passivate(&mut self) {
+        extern "C" {
+            static pushed_registers: *const RegistersStruct;
+            static stack_frame: *const u64;
+        }
+
+        unsafe {
+            //kprint!("Stack frame: {:x}\n", stack_frame as u64);
+
+            self.registers.r15 = (*pushed_registers).r15;
+            self.registers.r14 = (*pushed_registers).r14;
+            self.registers.r13 = (*pushed_registers).r13;
+            self.registers.r12 = (*pushed_registers).r12;
+            self.registers.r11 = (*pushed_registers).r11;
+            self.registers.r10 = (*pushed_registers).r10;
+            self.registers.r9 = (*pushed_registers).r9;
+            self.registers.r8 = (*pushed_registers).r8;
+            self.registers.rbp = (*pushed_registers).rbp;
+            self.registers.rsi = (*pushed_registers).rsi;
+            self.registers.rdx = (*pushed_registers).rdx;
+            self.registers.rcx = (*pushed_registers).rcx;
+            self.registers.rbx = (*pushed_registers).rbx;
+            self.registers.rax = (*pushed_registers).rax;
+
+            self.rip = *(stack_frame.add(0));
+            self.cs = *(stack_frame.add(1));
+            self.rflags = *(stack_frame.add(2));
+            self.rsp = *(stack_frame.add(3));
+            self.ss = *(stack_frame.add(4));
+        }
+
+        self.state = ProcessState::Passive;
+    }
+
+    pub fn activatable(&self) -> bool {
+        match self.state {
+            ProcessState::Passive => true,
+            _ => false,
         }
     }
 
-    pub fn _launch() {}
+    fn _get_tss_rsp0(&self) -> u64 {
+        0xffff_ffff_ffcf_ffff
+    }
 
     // According to AMD Volume 2, page 146
     fn get_physical_address_for_virtual_address(vaddr: u64) -> u64 {
@@ -248,7 +403,7 @@ impl Process {
     }
 
     pub fn get_entry_ip(&self) -> u64 {
-        self.entry_ip
+        self.rip
     }
 
     pub fn load_elf_from_bin() -> u64 {
@@ -260,19 +415,19 @@ impl Process {
         unsafe {
             kprint!(
                 "embedded elf file\nstart: {:x}\n  end: {:x}\n",
-                &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start as *const u8
-                    as usize,
-                &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_end as *const u8
-                    as usize
+                addr_of!(_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start)
+                    as *const u8 as usize,
+                addr_of!(_binary_build_userspace_x86_64_unknown_none_debug_helloworld_end)
+                    as *const u8 as usize
             );
 
-            let size = &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_end
+            let size = addr_of!(_binary_build_userspace_x86_64_unknown_none_debug_helloworld_end)
                 as *const u8 as usize
-                - &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start as *const u8
-                    as usize;
+                - addr_of!(_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start)
+                    as *const u8 as usize;
 
             let slice = core::slice::from_raw_parts(
-                &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start,
+                addr_of!(_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start),
                 size,
             );
 
@@ -304,7 +459,7 @@ impl Process {
                     mov rdi, {}
                     rep movsb",
                     in(reg) phdr.p_memsz,
-                    in(reg) &_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start as *const u8 as usize + phdr.p_offset as usize,
+                    in(reg) addr_of!(_binary_build_userspace_x86_64_unknown_none_debug_helloworld_start) as *const u8 as usize + phdr.p_offset as usize,
                     in(reg) phdr.p_vaddr,
                     out("rcx") _,
                     out("rsi") _,
