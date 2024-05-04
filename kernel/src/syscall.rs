@@ -1,3 +1,4 @@
+use crate::vga::{vga_flip, vga_plot_pixel};
 use crate::USERLAND;
 use crate::{kprintln, logging::log};
 use core::arch::asm;
@@ -16,11 +17,32 @@ pub extern "C" fn system_call() -> u64 {
     match syscall_nr {
         1 => return syscall_write(),
         2 => return syscall_getpid(),
+        3 => return syscall_plot_pixel(),
         _ => {
             kprintln!("Undefined system call triggered");
             return 0xdeadbeef;
         }
     }
+}
+
+fn syscall_plot_pixel() -> u64 {
+    let mut x: u32;
+    let mut y: u32;
+    let mut color: u32;
+
+    unsafe {
+        // TODO this must be possible more elegantly
+        asm!("",
+            out("r8") x,
+            out("r9") y,
+            out("r10") color
+        );
+    }
+
+    vga_plot_pixel(x, y, color as u8);
+    vga_flip();
+
+    return 0;
 }
 
 fn syscall_getpid() -> u64 {

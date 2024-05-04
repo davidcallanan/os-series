@@ -6,6 +6,7 @@ use crate::kprint;
 use crate::kprintln;
 use crate::time;
 use crate::userland;
+use crate::util::out_port_b;
 use crate::USERLAND;
 use core::arch::asm;
 use core::arch::global_asm;
@@ -136,17 +137,6 @@ pub extern "C" fn irq_handler(int_no: u64) {
         out_port_b(0xA0, 0x20);
     }
     out_port_b(0x20, 0x20);
-}
-
-fn out_port_b(port: u16, value: u8) {
-    unsafe {
-        asm!(
-            r#"out %al, %dx"#,
-            in("dx") port,
-            in("al") value,
-            options(att_syntax)
-        );
-    }
 }
 
 fn set_idt_gate(num: usize, base: u64, sel: u16, flags: u8) {

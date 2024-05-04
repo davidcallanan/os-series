@@ -52,6 +52,31 @@ pub fn write(filedescriptor: i64, payload: *const u64, len: usize) {
     }
 }
 
+pub fn draw_pixel(x: u32, y: u32, color: u8) {
+    unsafe {
+        asm!("
+            push rdi
+            mov rdi, 3
+
+            push r11
+            push rcx
+        
+            syscall
+        
+            pop rcx
+            pop r11
+            
+            pop rdi
+        ",
+            in("r8") x,
+            in("r9") y,
+            in("r10") color as u64,
+            options(nostack),
+            clobber_abi("C")
+        );
+    }
+}
+
 pub struct Printer {}
 
 impl core::fmt::Write for Printer {

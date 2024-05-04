@@ -14,6 +14,8 @@ mod process;
 mod syscall;
 mod time;
 mod userland;
+mod util;
+mod vga;
 
 /// This function is called on panic.
 #[panic_handler]
@@ -37,6 +39,12 @@ pub extern "C" fn kernel_main() -> ! {
     clear_console!();
     kprintln!("successfull boot!");
     kprintln!("Hellö Wörld!");
+
+    vga::vga_enter();
+    vga::vga_clear_screen();
+
+    //vga::vga_exit();
+    //kprintln!("Back in text mode");
 
     // Trigger test exception
     //unsafe {
