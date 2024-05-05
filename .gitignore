@@ -6,3 +6,4 @@ Cargo.lock
 /ghidra/
 targets/x86_64/iso/boot/kernel.bin
 ldlog.txt
+userland/src/doom
