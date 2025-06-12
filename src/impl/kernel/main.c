@@ -67,16 +67,10 @@ char to_ascii(uint16_t code) {
 }
 
 void handle_input(struct KeyboardEvent event) {
-    // print_str("Got keyboard input\n");
     if (event.type == KEYBOARD_EVENT_TYPE_MAKE) {
-        // print_str("Key down: ");
-        // print_uint64_hex(event.code);
-        // print_char('\n');
+        print_set_color(PRINT_COLOR_BLUE, PRINT_COLOR_WHITE);
         print_char(to_ascii(event.code));
     } else if (event.type == KEYBOARD_EVENT_TYPE_BREAK) {
-        // print_str("Key up: ");
-        // print_uint64_hex(event.code);
-        // print_char('\n');
     }
 }
 
@@ -88,22 +82,22 @@ void kernel_main() {
     keyboard_init();
     keyboard_set_handler(handle_input);
     
-    for (uint64_t i = 0; i < 100; i++) {
-        print_uint64_dec(i);
-        print_char(' ');
-    }
-    
     uint8_t prev_seconds = 0;
     
-    while (1) {
+    for (uint8_t i = 0; i < 5;) {
         uint8_t seconds = rtc_seconds();
         
         if (seconds != prev_seconds) {
-            // print_str("Seconds: ");
-            // print_uint64_dec(seconds);
-            // print_char('\n');
+            i++;
+            print_set_color(PRINT_COLOR_GREEN, PRINT_COLOR_BLACK);
+            print_str("\nSeconds: ");
+            print_uint64_dec(seconds);
         }
         
         prev_seconds = seconds;
     }
+    
+    print_str(" - Seconds loop disabled.\n");
+    
+    while (1);
 }
