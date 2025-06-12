@@ -2,7 +2,7 @@
 
 This respository holds all the source code for [this YouTube tutorial series](https://www.youtube.com/playlist?list=PLZQftyCk7_SeZRitx5MjBKzTtvk0pHMtp).
 
-You can find the revision for a specific episode on [this page](https://github.com/davidcallanan/yt-os-series/tags).
+You can find the revision for a specific episode on [this page](https://github.com/davidcallanan/os-series/blob/master/REVISIONS.md). Please make sure to select the revision corresponding to the episode you are working on. The code for each revision might not match the video content exactly, as some corrections and adjustments are made from time to time.
 
 You can find pre-built ISO files for this kernel at [this repository](https://github.com/davidcallanan/os-series-isos).
 
