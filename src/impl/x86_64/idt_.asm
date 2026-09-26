@@ -7,7 +7,7 @@ idt_load:
 
 %macro WRAPPED_HANDLER 1
 	global %1_wrapped
-	
+
 	%1_wrapped:
 		; save general-purpose registers
 		push rax
@@ -25,9 +25,9 @@ idt_load:
 		push r13
 		push r14
 		push r15
-
+		
 		call %1
-
+		
 		; restore general-purpose registers
 		pop r15
 		pop r14

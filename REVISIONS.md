@@ -9,3 +9,7 @@ You can [browse tags here](https://github.com/davidcallanan/os-series/tags).
 ## Episode 2
 
  - [Latest revision](https://github.com/davidcallanan/os-series/tree/ep2) (browse tree).
+
+## Episode 3
+
+ - [Latest revision](https://github.com/davidcallanan/os-series/tree/ep3) (browse tree).
